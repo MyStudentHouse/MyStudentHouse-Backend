@@ -17,6 +17,9 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::get('beer', 'API\BeerController@show')->middleware('cors');
+Route::post('beer', 'API\BeerController@store')->middleware('cors');
+
 Route::post('login', 'API\UserController@login')->middleware('cors');
 Route::post('register', 'API\UserController@register')->middleware('cors');
 Route::group(['middleware' => 'auth:api'], function(){
