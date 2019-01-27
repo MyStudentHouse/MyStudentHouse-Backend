@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\User;
 use App\Beer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -13,13 +14,12 @@ class BeerController extends Controller
 {
     public $successStatus = 200;
 
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     public function show()
     {
+        if(!Auth::check()) {
+            return response()->json(['message' => 'Unauthorised'], 403);
+        }
+
     	$beerquote = DB::table('beers')->join('users', 'beers.user_id', '=', 'users.id')->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
 
         return response()->json(['success' => $beerquote], $this->successStatus);
@@ -28,6 +28,10 @@ class BeerController extends Controller
 
     public function store(Request $request)
     {
+        if(!Auth::check()) {
+            return response()->json(['message' => 'Unauthorised'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'user_id' => 'required',
             'action' => 'required', /* TODO(PATBRO): consider to change this to an enum */
@@ -98,5 +102,6 @@ class BeerController extends Controller
     	}
 
     	return response()->json(['success' => $beer], $this->successStatus);
+        /* TODO(PATBRO): return something different than the last array saved to the database */
     }
 }
