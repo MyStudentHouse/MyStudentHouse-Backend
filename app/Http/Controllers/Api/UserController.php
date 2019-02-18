@@ -11,7 +11,9 @@ use Validator;
 class UserController extends Controller
 {
     public $successStatus = 200;
-/**
+    public $unauthorisedStatus = 401;
+
+    /**
      * login api
      *
      * @return \Illuminate\Http\Response
@@ -21,12 +23,17 @@ class UserController extends Controller
             $user = Auth::user();
             $success['token'] = $user->createToken('MyStudentHouse')-> accessToken;
             return response()->json(['success' => $success], $this->successStatus);
-        }
-        else{
-            return response()->json(['error' => 'Unauthorised'], 401);
+        } else {
+            return response()->json(['error' => 'Unauthorised'], $this->unauthorisedStatus);
         }
     }
-/**
+
+    public function logout(Request $request) {
+        Auth::logout();
+        return response()->json(['success' => 'You are successfully logged out'],  $this->successStatus);
+    }
+
+    /**
      * Register api
      *
      * @return \Illuminate\Http\Response
@@ -41,7 +48,7 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error'=>$validator->errors()], 401);
+            return response()->json(['error'=>$validator->errors()], $this->unauthorisedStatus);
         }
 
         $input = $request->all();
@@ -49,9 +56,11 @@ class UserController extends Controller
         $user = User::create($input);
         $success['token'] =  $user->createToken('MyStudentHouse')-> accessToken;
         $success['name'] =  $user->name;
-return response()->json(['success'=>$success], $this-> successStatus);
+
+        return response()->json(['success'=>$success], $this-> successStatus);
     }
-/**
+
+    /**
      * details api
      *
      * @return \Illuminate\Http\Response
