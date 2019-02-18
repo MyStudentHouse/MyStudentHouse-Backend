@@ -1,4 +1,9 @@
 <?php
+/** @file BeerController.php
+ *  @brief Beer Controller
+ *
+ *  The beer controller holds the functionality to, check the user' current beer quota, subtract beers, add crates or return crates.
+ */
 
 namespace App\Http\Controllers\API;
 
@@ -20,9 +25,9 @@ class BeerController extends Controller
             return response()->json(['message' => 'Unauthorised'], 403);
         }
 
-    	$beerquote = DB::table('beers')->join('users', 'beers.user_id', '=', 'users.id')->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
+    	$beerquota = DB::table('beers')->join('users', 'beers.user_id', '=', 'users.id')->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
 
-        return response()->json(['success' => $beerquote], $this->successStatus);
+        return response()->json(['success' => $beerquota], $this->successStatus);
     }
 
 
