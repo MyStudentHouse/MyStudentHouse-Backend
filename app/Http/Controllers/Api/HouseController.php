@@ -25,8 +25,17 @@ class HouseController extends Controller
         }
 
         $input = $request->all();
-        $user = House::create($input);
+        $house = House::create($input);
 
-        return response()->json(['success' => $containers], $this->successStatus);
+        return response()->json(['success' => $house], $this->successStatus);
+    }
+
+    public function assign_user($house_id)
+    {
+        /* Verify if user is authorised to add other users to a student house */
+        $user = Auth::user();
+        $ = DB::table('user_specific')->where('user_id', $user->id)->get();
+
+
     }
 }
