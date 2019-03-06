@@ -18,7 +18,8 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function login(){
+    public function login()
+    {
         if(Auth::attempt(['email' => request('email'), 'password' => request('password')])){
             $user = Auth::user();
             $success['token'] = $user->createToken('MyStudentHouse')-> accessToken;
@@ -28,7 +29,8 @@ class UserController extends Controller
         }
     }
 
-    public function logout(Request $request) {
+    public function logout(Request $request)
+    {
         Auth::logout();
         return response()->json(['success' => 'You are successfully logged out'],  $this->successStatus);
     }
@@ -57,7 +59,7 @@ class UserController extends Controller
         $success['token'] =  $user->createToken('MyStudentHouse')-> accessToken;
         $success['name'] =  $user->name;
 
-        return response()->json(['success'=>$success], $this-> successStatus);
+        return response()->json(['success'=>$success], $this->successStatus);
     }
 
     /**
@@ -68,7 +70,7 @@ class UserController extends Controller
     public function details()
     {
         $user = Auth::user();
-        return response()->json(['success' => $user], $this-> successStatus);
+        return response()->json(['success' => $user], $this->successStatus);
     }
 }
 ?>
