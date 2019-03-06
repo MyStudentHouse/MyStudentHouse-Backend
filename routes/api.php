@@ -32,3 +32,6 @@ Route::post('register', 'API\UserController@register')->middleware('cors');
 Route::group(['middleware' => 'auth:api'], function(){
     Route::post('details', 'API\UserController@details')->middleware('cors');
 });
+
+Route::post('password/email', 'Auth\ForgotPasswordController@sendResetLinkEmail')->middleware('cors');
+Route::post('password/reset', 'Auth\ResetPasswordController@reset')->middleware('cors');
