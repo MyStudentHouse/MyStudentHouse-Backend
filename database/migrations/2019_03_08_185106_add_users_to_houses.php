@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class Houses extends Migration
+class AddUsersToHouses extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,12 @@ class Houses extends Migration
      */
     public function up()
     {
-        Schema::create('houses', function (Blueprint $table) {
+        Schema::create('users_per_house', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('house_id');
-            $table->string('name', 100);
-            $table->text('description');
-            $table->string('image', 100);
-            $table->unsignedInteger('created_by'); /* User ID which created the student house */
+            $table->unsignedInteger('user_id');
+            $table->unsignedInteger('role');
+            $table->boolean('deleted');
             $table->timestamps();
         });
     }
@@ -31,6 +30,6 @@ class Houses extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('houses');
+        Schema::dropIfExists('users_per_house');
     }
 }
