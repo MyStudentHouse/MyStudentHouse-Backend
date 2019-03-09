@@ -7,36 +7,33 @@
 
 namespace App\Http\Controllers\API;
 
+use Auth;
 use App\User;
 use App\Beer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Validator;
 
 class BeerController extends Controller
 {
     public $successStatus = 200;
 
+    public function __construct()
+    {
+        /* TODO(PATBRO): make use of construct in combination with middleware auth, or resolve this via routes/api. */
+        // $this->middleware('auth');
+    }
+
     public function show()
     {
-        if(!Auth::check()) {
-            return response()->json(['message' => 'Unauthorised'], 403);
-        }
-
-    	$beerquota = DB::table('beers')->join('users', 'beers.user_id', '=', 'users.id')->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
+        $beerquota = DB::table('beers')->join('users', 'beers.user_id', '=', 'users.id')->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
 
         return response()->json(['success' => $beerquota], $this->successStatus);
     }
 
-
     public function store(Request $request)
     {
-        if(!Auth::check()) {
-            return response()->json(['message' => 'Unauthorised'], 403);
-        }
-
         $validator = Validator::make($request->all(), [
             'user_id' => 'required',
             'action' => 'required', /* TODO(PATBRO): consider to change this to an enum */
@@ -48,28 +45,39 @@ class BeerController extends Controller
         }
 
         $input = $request->all();
-    	if($input['action'] == 'substractBeer') {
+
+        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $input['house_id'])->exists() == false) {
+            return response()->json(['error' => 'User is not authorised to perform any actions for this house'], 403);
+        }
+
+        /* TODO(PATBRO): consider splitting up these actions into separate API calls */
+        switch($input['action']) {
+    	case 'substractBeer':
     		/* Value of substractBeer equals the user ID where to substract a beer */
     		if($input['amount'] < 1)
     			return response()->json(['error' => 'Specified amount incorrect'], 403);
 
     		/* Substract a beer from the given user ID */
     		$beer = new Beer;
-    		$beer->user_id = $input['user_id']; /* TODO(PATBRO): check if user belongs to student house */
+    		$beer->user_id = $input['user_id'];
+            $beer->house_id = $input['house_id'];
     		$beer->type = 'beer';
     		$beer->value = -1 * $input['amount'];
     		$beer->performed_by_user_id = Auth::id();
     		$beer->created_at = now();
     		$beer->updated_at = now();
     		$beer->save();
-    	} elseif($input['action'] == 'addCrate') {
+            break;
+
+    	case 'addCrate':
     		/* Value of addCrate equals the user ID where to add a crate */
     		if($input['amount'] < 1)
     			return response()->json(['error' => 'Specified amount incorrect'], 403);
 
     		/* Add a crate to the user ID */
     		$crate = new Beer;
-    		$crate->user_id = $input['user_id']; /* TODO(PATBRO): check if user belongs to student house */
+    		$crate->user_id = $input['user_id'];
+            $beer->house_id = $input['house_id'];
     		$crate->type = 'crate';
     		$crate->value = $input['amount'];
     		$crate->performed_by_user_id = Auth::id();
@@ -79,14 +87,16 @@ class BeerController extends Controller
 
     		/* Add the beers of the crate to the same user ID */
     		$beer = new Beer;
-    		$beer->user_id = $input['user_id']; /* TODO(PATBRO): check if user belongs to student house */
+    		$beer->user_id = $input['user_id'];
+            $beer->house_id = $input['house_id'];
     		$beer->type = 'beer';
     		$beer->value = $input['amount'] * 24; /* TODO(PATBRO): implement possibility to add half a crate as well */
     		$beer->performed_by_user_id = Auth::id();
     		$beer->created_at = now();
     		$beer->updated_at = now();
     		$beer->save();
-    	} elseif($input['action'] == 'returnCrate') {
+
+    	case 'returnCrate':
     		/* Value of returnCrate equals the user ID of the logged in user */
     		if($input['action'] != Auth::id())
     			return response()->json(['error' => 'User action not permitted'], 403);
@@ -102,8 +112,11 @@ class BeerController extends Controller
     		$beer->created_at = now();
     		$beer->updated_at = now();
     		$beer->save();
-    	} else {
+            break;
+
+    	default:
     		return response()->json(['error' => 'Action not permitted'], 401);
+            break;
     	}
 
     	return response()->json(['success' => $beer], $this->successStatus);
