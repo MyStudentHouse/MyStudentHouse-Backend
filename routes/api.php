@@ -23,7 +23,7 @@ Route::group(['middleware' => 'auth:api'], function(){
     Route::get('beer', 'API\BeerController@show')->middleware('cors');
     Route::post('beer', 'API\BeerController@store')->middleware('cors');
 
-    Route::post('houses', 'API\HouseController@store')->middleware('cors');
+    Route::post('house', 'API\HouseController@store')->middleware('cors');
 });
 
 Route::post('login', ['as' => 'login', 'uses' => 'API\UserController@login'])->middleware('cors');
