@@ -15,10 +15,9 @@ class Houses extends Migration
     {
         Schema::create('houses', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('house_id');
             $table->string('name', 100);
             $table->text('description');
-            $table->string('image', 100);
+            $table->string('image', 100)->default('/img/placeholders/house_placeholder.jpg');
             $table->unsignedInteger('created_by'); /* User ID which created the student house */
             $table->timestamps();
         });

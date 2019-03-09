@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use Auth;
-use App\User;
-use App\Container;
+use App\House;
+use App\UsersPerHouses;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,14 +16,21 @@ class HouseController extends Controller
     public $invalidStatus = 412;
     public $unauthorisedStatus = 401;
 
+    public function __construct()
+    {
+        /* TODO(PATBRO): make use of construct in combination with middleware auth, or resolve this via routes/api. */
+        // $this->middleware('auth');
+    }
+
     /* Create a new house */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required',
+            'description' => 'required',
         ]);
 
-        if($validator->fails()) {
+        if($validator->fails() == true) {
             return response()->json(['error' => $validator->errors()], $this->invalidStatus);
         }
 
@@ -35,11 +42,11 @@ class HouseController extends Controller
         $house->save();
 
         /* Add the user who created the house to the house */
-        $users_per_house = new UsersPerHouse;
-        $users_per_house->house_id = $house->id;
-        $users_per_house->user_id = Auth::id();
-        $users_per_house->role = 1; /* Standard, highest role */
-        $users_per_house->save();
+        $users_per_houses = new UsersPerHouses;
+        $users_per_houses->house_id = $house->id;
+        $users_per_houses->user_id = 1;
+        $users_per_houses->role = 1; /* Standard, highest role */
+        $users_per_houses->save();
 
         return response()->json(['success' => $house], $this->successStatus);
     }
@@ -53,30 +60,28 @@ class HouseController extends Controller
             'role' => 'required|integer|between:1,9', /* Role must be between 1 and 3 */
         ]);
 
-        if($validator->fails()) {
+        if($validator->fails() == true) {
             return response()->json(['error' => $validator->errors()], $this->invalidStatus);
         }
 
         /* Verify if user is authorised to add other users to a student house */
-        $user_id = Auth::id();
-        $boolean = DB:table('users_per_house')->where('user_id', $user_id)->exists();
-        if($boolean == true) {
+        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $input['house_id'])->exists() == true) {
             return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->invalidStatus);
         }
 
-        if(DB:table('users_per_house')->where('user_id', $input['user_id']))->where('house_id', $input['house_id'])->exists() == true) {
+        if(DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->exists() == true) {
             /* User already belongs to this house */
             return response()->json(['error' => 'User already belongs to this house'], $this->invalidStatus);
         } else {
             /* User does not yet belong to this house, so add the user to the house */
-            $users_per_house = new UsersPerHouse;
-            $users_per_house->house_id = $input['house_id'];
-            $users_per_house->user_id = $input['user_id'];
-            $users_per_house->role = $input['role'];
-            $users_per_house->save();
+            $users_per_houses = new UsersPerHouse;
+            $users_per_houses->house_id = $input['house_id'];
+            $users_per_houses->user_id = $input['user_id'];
+            $users_per_houses->role = $input['role'];
+            $users_per_houses->save();
         }
 
-        return response()->json(['success' => $users_per_house], $this->successStatus);
+        return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
 
     public function remove_user(Request $request)
@@ -86,28 +91,27 @@ class HouseController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        if($validator->fails()) {
+        if($validator->fails() == true) {
             return response()->json(['error' => $validator->errors()], $this->invalidStatus);
         }
 
         /* Check if the current user is part of this house */
-        $user_id = Auth::id();
-        if(DB:table('users_per_house')->where('user_id', $user_id)->where('house_id', $input['house_id'])->exists() == false) {
+        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $input['house_id'])->exists() == false) {
             /* TODO(PATBRO): also check its user role, whether the current user is permitted to remove another user */
             return response()->json(['error' => 'You are not permitted to remove a user from this house'], $this->invalidStatus);
         }
 
         /* Check if the user to remove belongs to this house */
-        if(DB:table('users_per_house')->where('user_id', $input['user_id']))->where('house_id', $input['house_id'])->exists() == true) {
+        if(DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->exists() == true) {
             /* Set deleted to true */
-            $users_per_house = DB:table('users_per_house')->where('user_id', $input['user_id']))->where('house_id', $input['house_id'])->get();
-            $users_per_house->deleted = true;
-            $users_per_house->save();
+            $users_per_houses = DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->get();
+            $users_per_houses->deleted = true;
+            $users_per_houses->save();
         } else {
-            /* TODO(PATBRO): make error less descriptive due to security reasons */
+            /* TODO(PATBRO): make error less descriptive due to security reasons, otherwise this could be brute forced */
             return response()->json(['error' => 'User does not belong to this house'], $this->invalidStatus);
         }
 
-        return response()->json(['success' => $users_per_house], $this->successStatus);
+        return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
 }
