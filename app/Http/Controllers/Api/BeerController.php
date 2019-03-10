@@ -1,8 +1,7 @@
 <?php
 /** @file BeerController.php
- *  @brief Beer Controller
  *
- *  The beer controller holds the functionality to, check the user' current beer quota, subtract beers, add crates or return crates.
+ *  The beer controller holds the functionality to check the current beer quota, subtract beers, add crates or return crates.
  */
 
 namespace App\Http\Controllers\API;
@@ -25,13 +24,43 @@ class BeerController extends Controller
         // $this->middleware('auth');
     }
 
-    public function show()
+    /**
+     * @par API\BeerController@show (POST)
+     * Gets all the beers in the database for a certain house.
+     *
+     * @param house_id  Which house to retrieve the beers for.
+     *
+     * @retval JSON     Error 401
+     * @retval JSON     Success 200
+     */
+    public function show(Request $request)
     {
-        $beerquota = DB::table('beers')->join('users', 'beers.user_id', '=', 'users.id')->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
+        $validator = Validator::make($request->all(), [
+            'house_id' => 'required',
+        ]);
 
-        return response()->json(['success' => $beerquota], $this->successStatus);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 401);
+        }
+
+        $beers = DB::table('beers')->join('users', 'beers.house_id', '=', $request->input('house_id'))->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
+
+        return response()->json(['success' => $beers], $this->successStatus);
     }
 
+    /**
+     * @par API\BeerController@store (POST)
+     * Subtract a beer, add a crate or return a crate using this API call.
+     * Mentioned parameters are values to post using a POST method.
+     *
+     * @param user_id   The user ID to perform the action to.
+     * @param action    The action to perform: "substractBeer", "addCrate" or "returnCrate".
+     * @param amount    The amount of beers/crates.
+     *
+     * @retval JSON     Error 401
+     * @retval JSON     Error 403
+     * @retval JSON     Success 200
+     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
