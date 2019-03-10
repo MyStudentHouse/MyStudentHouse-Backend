@@ -27,6 +27,30 @@ class HouseController extends Controller
     }
 
     /**
+     * @par API\HouseController@show (POST)
+     * Fetch a house
+     *
+     * @param house_id  The house ID to fetch the data from.
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function show(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'house_id' => 'required',
+        ]);
+
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->invalidStatus);
+        }
+
+        $house = DB::table('houses')->where('id', $request->input('house_id'))->get();
+
+        return response()->json(['success' => $house], $this->successStatus);
+    }
+
+    /**
      * @par API\HouseController@store (POST)
      * Create a new house with the given parameters.
      *
@@ -137,6 +161,7 @@ class HouseController extends Controller
         /* Check if the user to remove belongs to this house */
         if(DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->exists() == true) {
             /* Set deleted to true */
+            /* TODO(PATBRO): first check whether beer and WBW balance is even */
             $users_per_houses = DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->get();
             $users_per_houses->deleted = true;
             $users_per_houses->save();
