@@ -17,7 +17,7 @@ class Containers extends Migration
             $table->increments('id');
             $table->unsignedInteger('user_id');
             $table->date('date');
-            $table->unsignedInteger('took_over_user_id')->nullable();
+            $table->unsignedInteger('performed_by_user_id')->nullable(); /* Action was actually performed by this user */
             $table->timestamps();
         });
     }

@@ -1,4 +1,8 @@
 <?php
+/** @file HouseController.php
+ *
+ *  The house controller holds the functionality to create new houses or assign users to a specific house.
+ */
 
 namespace App\Http\Controllers\API;
 
@@ -22,7 +26,16 @@ class HouseController extends Controller
         // $this->middleware('auth');
     }
 
-    /* Create a new house */
+    /**
+     * @par API\HouseController@store (POST)
+     * Create a new house with the given parameters.
+     *
+     * @param name          The name of the house to create (required).
+     * @param description   The description of the house to create (required).
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -51,8 +64,18 @@ class HouseController extends Controller
         return response()->json(['success' => $house], $this->successStatus);
     }
 
-    /* Assign a user to an already existing house */
-    public function assign_user(Request $request)
+    /**
+     * @par API\HouseController@assignUser (POST)
+     * Assign a user to an already existing house.
+     *
+     * @param house_id  House ID to add the user to (required).
+     * @param user_id   ID of the user to add to the corresponding house (required).
+     * @param role      Role of the user to add (required, between 1 and 9).
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function assignUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'house_id' => 'required|integer',
@@ -84,7 +107,17 @@ class HouseController extends Controller
         return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
 
-    public function remove_user(Request $request)
+    /**
+     * @par API\HouseController@deleteUser (POST)
+     * Delete a user from a house.
+     *
+     * @param house_id  House ID to delete the user from (required).
+     * @param user_id   ID of the user to delete from the corresponding house (required).
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function deleteUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'house_id' => 'required|integer',

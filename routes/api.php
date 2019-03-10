@@ -20,8 +20,11 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 Route::group(['middleware' => 'auth:api'], function(){
-    Route::get('beer', 'API\BeerController@show')->middleware('cors');
+    Route::post('beer', 'API\BeerController@show')->middleware('cors');
     Route::post('beer', 'API\BeerController@store')->middleware('cors');
+
+    Route::post('container', 'API\ContainerController@show')->middleware('cors');
+    Route::post('container/update', 'API\ContainerController@updateContainerTurns')->middleware('cors');
 
     Route::post('house', 'API\HouseController@store')->middleware('cors');
 });
