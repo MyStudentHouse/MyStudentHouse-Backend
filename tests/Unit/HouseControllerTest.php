@@ -69,4 +69,39 @@ class HouseControllerTest extends TestCase
             ]]
         ]);
     }
+
+    public function testAssignUserToHouse()
+    {
+        /* Assign user to a house */
+        $user = factory(\App\User::class)->create();
+
+        $data = [
+            'house_id' => 1,
+            'user_id' => $user->id,
+            'role' => 1,
+        ];
+
+        $response = $this->actingAs($user, 'api')->json('POST', '/api/house/assign', $data);
+        $response->assertStatus(200);
+        $response->assertJson([
+            "success" => [
+                "house_id" => 1,
+                "user_id" => $user->id,
+                "role" => 1,
+                "created_at" => now()->toDateTimeString(),
+                "updated_at" => now()->toDateTimeString()
+            ]
+        ]);
+
+        $data = [
+            'house_id' => 1,
+            'user_id' => 1,
+        ];
+
+        $response = $this->actingAs($user, 'api')->json('POST', '/api/house/validate', $data);
+        $response->assertStatus(200);
+        $response->assertJson([
+            "success" => true
+        ]);
+    }
 }
