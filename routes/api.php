@@ -28,6 +28,8 @@ Route::group(['middleware' => 'auth:api'], function(){
 
     Route::post('house', 'API\HouseController@store')->middleware('cors');
     Route::post('house/fetch', 'API\HouseController@show')->middleware('cors');
+    Route::post('house/assign', 'API\HouseController@assignUser')->middleware('cors');
+    Route::post('house/validate', 'API\HouseController@validateUser')->middleware('cors');
 });
 
 Route::post('login', ['as' => 'login', 'uses' => 'API\UserController@login'])->middleware('cors');

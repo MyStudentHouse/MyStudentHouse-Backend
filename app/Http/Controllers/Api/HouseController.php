@@ -88,6 +88,39 @@ class HouseController extends Controller
         return response()->json(['success' => $house], $this->successStatus);
     }
 
+    private function userBelongsToHouse($house_id, $user_id)
+    {
+        if(DB::table('users_per_houses')->where('user_id', $user_id)->where('house_id', $house_id)->exists() == true) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @par API\HouseController@validateUser (POST)
+     * Validate whether a user is part of a house
+     *
+     * @param house_id
+     * @param user_id
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+     public function validateUser(Request $request)
+     {
+         $validator = Validator::make($request->all(), [
+            'house_id' => 'required|integer',
+            'user_id' => 'required|integer',
+         ]);
+
+         if($validator->fails() == true) {
+             return response()->json(['error' => $validator->errors()], $this->invalidStatus);
+         }
+
+        return response()->json(['success' => $this->userBelongsToHouse($request->input('house_id'), $request->input('user_id'))], $this->successStatus);
+     }
+
     /**
      * @par API\HouseController@assignUser (POST)
      * Assign a user to an already existing house.
@@ -112,19 +145,19 @@ class HouseController extends Controller
         }
 
         /* Verify if user is authorised to add other users to a student house */
-        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $input['house_id'])->exists() == true) {
+        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $request->input('house_id'))->exists() == true) {
             return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->invalidStatus);
         }
 
-        if(DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->exists() == true) {
+        if($this->userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
             /* User already belongs to this house */
             return response()->json(['error' => 'User already belongs to this house'], $this->invalidStatus);
         } else {
             /* User does not yet belong to this house, so add the user to the house */
-            $users_per_houses = new UsersPerHouse;
-            $users_per_houses->house_id = $input['house_id'];
-            $users_per_houses->user_id = $input['user_id'];
-            $users_per_houses->role = $input['role'];
+            $users_per_houses = new UsersPerHouses;
+            $users_per_houses->house_id = $request->input('house_id');
+            $users_per_houses->user_id = $request->input('user_id');
+            $users_per_houses->role = $request->input('role');
             $users_per_houses->save();
         }
 
@@ -153,16 +186,16 @@ class HouseController extends Controller
         }
 
         /* Check if the current user is part of this house */
-        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $input['house_id'])->exists() == false) {
+        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $request->input('house_id'))->exists() == false) {
             /* TODO(PATBRO): also check its user role, whether the current user is permitted to remove another user */
             return response()->json(['error' => 'You are not permitted to remove a user from this house'], $this->invalidStatus);
         }
 
         /* Check if the user to remove belongs to this house */
-        if(DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->exists() == true) {
+        if(userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
             /* Set deleted to true */
             /* TODO(PATBRO): first check whether beer and WBW balance is even */
-            $users_per_houses = DB::table('users_per_houses')->where('user_id', $input['user_id'])->where('house_id', $input['house_id'])->get();
+            $users_per_houses = DB::table('users_per_houses')->where('user_id', $request->name('user_id'))->where('house_id', $request->name('house_id'))->get();
             $users_per_houses->deleted = true;
             $users_per_houses->save();
         } else {
