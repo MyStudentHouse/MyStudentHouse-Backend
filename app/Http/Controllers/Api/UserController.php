@@ -29,6 +29,11 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * logout api
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function logout(Request $request)
     {
         Auth::logout();
@@ -36,7 +41,7 @@ class UserController extends Controller
     }
 
     /**
-     * Register api
+     * register api
      *
      * @return \Illuminate\Http\Response
      */
@@ -56,8 +61,8 @@ class UserController extends Controller
         $input = $request->all();
         $input['password'] = bcrypt($input['password']);
         $user = User::create($input);
-        $success['token'] =  $user->createToken('MyStudentHouse')-> accessToken;
-        $success['name'] =  $user->name;
+        $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
+        $success['name'] = $user->name;
 
         return response()->json(['success'=>$success], $this->successStatus);
     }
@@ -70,6 +75,37 @@ class UserController extends Controller
     public function details()
     {
         $user = Auth::user();
+        return response()->json(['success' => $user], $this->successStatus);
+    }
+
+    /**
+     * updateDetails API
+     *
+     * @return \Illuminate\Htpp\Response
+     */
+    public function updateDetails(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required',
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], $this->unauthorisedStatus);
+        }
+
+        $user = Auth::user();
+        /* Validate user */
+        if($user->id != $request->name('id')) {
+            return response()->json(['error' => 'Unauthorised'], $this->unauthorisedStatus);
+        }
+
+        $user->image = $request->name('image');
+        $user->email = $request->name('email');
+        $user->phone = $request->name('phone'); /* TODO(PATBRO): write a validation rule to validate phone numbers */
+        $user->iban = $request->name('iban'); /* TODO(PATBRO): write a validation rule to validate an IBAN */
+        $user->save();
+
         return response()->json(['success' => $user], $this->successStatus);
     }
 }

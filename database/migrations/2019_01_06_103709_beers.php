@@ -16,6 +16,7 @@ class Beers extends Migration
         Schema::create('beers', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('user_id');
+            $table->unsignedInteger('house_id');
             $table->enum('type', array('beer', 'crate'));
             $table->Integer('value');
             $table->unsignedInteger('performed_by_user_id');
