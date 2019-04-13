@@ -87,10 +87,7 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'id' => 'required',
-            'image' => 'required',
             'email' => 'required|email',
-            'phone' => 'required',
-            'iban' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -105,8 +102,8 @@ class UserController extends Controller
 
         $user->image = $request->name('image');
         $user->email = $request->name('email');
-        $user->phone = $request->name('phone');
-        $user->iban = $request->name('iban');
+        $user->phone = $request->name('phone'); /* TODO(PATBRO): write a validation rule to validate phone numbers */
+        $user->iban = $request->name('iban'); /* TODO(PATBRO): write a validation rule to validate an IBAN */
         $user->save();
 
         return response()->json(['success' => $user], $this->successStatus);

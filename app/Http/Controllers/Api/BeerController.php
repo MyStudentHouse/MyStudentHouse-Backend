@@ -80,48 +80,49 @@ class BeerController extends Controller
         /* TODO(PATBRO): consider splitting up these actions into separate API calls */
         switch($request->name('action')) {
     	case 'substractBeer':
-    		/* Value of substractBeer equals the user ID where to substract a beer */
-    		if($request->name('amount') < 1)
-    			return response()->json(['error' => 'Specified amount incorrect'], 403);
+            /* Value of substractBeer equals the user ID where to substract a beer */
+            if($request->name('amount') < 1)
+                return response()->json(['error' => 'Specified amount incorrect'], 403);
 
-    		/* Substract a beer from the given user ID */
-    		$beer = new Beer;
-    		$beer->user_id = $request->name('user_id');
+            /* Substract a beer from the given user ID */
+            $beer = new Beer;
+            $beer->user_id = $request->name('user_id');
             $beer->house_id = $request->name('house_id');
-    		$beer->type = 'beer';
-    		$beer->value = -1 * $request->name('amount');
-    		$beer->performed_by_user_id = Auth::id();
-    		$beer->created_at = now();
-    		$beer->updated_at = now();
-    		$beer->save();
+            $beer->type = 'beer';
+            $beer->value = -1 * $request->name('amount');
+            $beer->performed_by_user_id = Auth::id();
+            $beer->created_at = now();
+            $beer->updated_at = now();
+            $beer->save();
             break;
 
     	case 'addCrate':
-    		/* Value of addCrate equals the user ID where to add a crate */
-    		if($request->name('amount') < 1)
-    			return response()->json(['error' => 'Specified amount incorrect'], 403);
+            /* Value of addCrate equals the user ID where to add a crate */
+            if($request->name('amount') < 1)
+                return response()->json(['error' => 'Specified amount incorrect'], 403);
 
-    		/* Add a crate to the user ID */
-    		$crate = new Beer;
-    		$crate->user_id = $request->name('user_id');
-            $beer->house_id = $request->name('house_id');
-    		$crate->type = 'crate';
-    		$crate->value = $request->name('amount');
-    		$crate->performed_by_user_id = Auth::id();
-    		$crate->created_at = now();
-    		$crate->updated_at = now();
-    		$crate->save();
+            /* Add a crate to the user ID */
+            $crate = new Beer;
+            $crate->user_id = $request->name('user_id');
+            $crate->house_id = $request->name('house_id');
+            $crate->type = 'crate';
+            $crate->value = $request->name('amount');
+            $crate->performed_by_user_id = Auth::id();
+            $crate->created_at = now();
+            $crate->updated_at = now();
+            $crate->save();
 
-    		/* Add the beers of the crate to the same user ID */
-    		$beer = new Beer;
-    		$beer->user_id = $request->name('user_id');
+            /* Add the beers of the crate to the same user ID */
+            $beer = new Beer;
+            $beer->user_id = $request->name('user_id');
             $beer->house_id = $request->name('house_id');
-    		$beer->type = 'beer';
-    		$beer->value = $request->name('amount') * 24; /* TODO(PATBRO): implement possibility to add half a crate as well */
-    		$beer->performed_by_user_id = Auth::id();
-    		$beer->created_at = now();
-    		$beer->updated_at = now();
-    		$beer->save();
+            $beer->type = 'beer';
+            $beer->value = $request->name('amount') * 24; /* TODO(PATBRO): implement possibility to add half a crate as well */
+            $beer->performed_by_user_id = Auth::id();
+            $beer->created_at = now();
+            $beer->updated_at = now();
+            $beer->save();
+            break;
 
     	case 'returnCrate':
     		/* Value of returnCrate equals the user ID of the logged in user */
