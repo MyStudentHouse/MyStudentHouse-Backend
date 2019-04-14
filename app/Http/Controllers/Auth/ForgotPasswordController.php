@@ -20,6 +20,8 @@ class ForgotPasswordController extends Controller
 
     use SendsPasswordResetEmails;
 
+    public $successStatus = 200;
+
     /**
      * Create a new controller instance.
      *
@@ -28,5 +30,15 @@ class ForgotPasswordController extends Controller
     public function __construct()
     {
         $this->middleware('guest');
+    }
+
+    protected function sendResetLinkResponse($response)
+    {
+        return response()->json(['success' => ''], $this->successStatus);
+    }
+
+    protected function sendResetLinkFailedResponse($response)
+    {
+        return response()->json(['failed' => ''], $this->successStatus);
     }
 }
