@@ -6,11 +6,12 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Container;
 use Auth;
+use App\Container;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-
+use Validator;
 
 class ContainerController extends Controller
 {
@@ -74,7 +75,7 @@ class ContainerController extends Controller
     	/* Fetch latest container entry */
         $container = Containers::where('house_id', $request->input('house_id'))->orderBy('date', 'desc')->first();
         /* Retrieve which users belong to this house */
-    	$users = DB::table('users_per_houses')->where('house_id', $request->('house_id'))->orderBy('created_at', 'desc')->get();
+    	$users = DB::table('users_per_houses')->where('house_id', $request->input('house_id'))->orderBy('created_at', 'desc')->get();
         $i = 0;
         $last_turn = $container->date;
         /* Determine next container turn by looping through all users */
