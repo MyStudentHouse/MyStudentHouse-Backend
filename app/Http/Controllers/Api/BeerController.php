@@ -25,25 +25,17 @@ class BeerController extends Controller
     }
 
     /**
-     * @par API\BeerController@show (POST)
-     * Gets all the beers in the database for a certain house.
+     * @par API\BeerController@show (GET)
+     * Get all the beers from the database for a certain house.
      *
      * @param house_id  Which house to retrieve the beers for.
      *
      * @retval JSON     Error 401
      * @retval JSON     Success 200
      */
-    public function show(Request $request)
+    public function show($house_id)
     {
-        $validator = Validator::make($request->all(), [
-            'house_id' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 401);
-        }
-
-        $beers = DB::table('beers')->join('users', 'beers.house_id', '=', $request->input('house_id'))->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
+        $beers = DB::table('beers')->where('house_id', $house_id)->leftJoin('users', 'users.id', '=', 'beers.user_id')->select('users.name', 'user_id', 'type', DB::raw('sum(value) as total'))->groupBy('user_id', 'type')->get();
 
         return response()->json(['success' => $beers], $this->successStatus);
     }
@@ -54,6 +46,7 @@ class BeerController extends Controller
      * Mentioned parameters are values to post using a POST method.
      *
      * @param user_id   The user ID to perform the action to.
+     * @param house_id  The house ID to perform the action to (of which the user also belongs to).
      * @param action    The action to perform: "substractBeer", "addCrate" or "returnCrate".
      * @param amount    The amount of beers/crates.
      *
@@ -78,18 +71,18 @@ class BeerController extends Controller
         }
 
         /* TODO(PATBRO): consider splitting up these actions into separate API calls */
-        switch($request->name('action')) {
+        switch($request->input('action')) {
     	case 'substractBeer':
             /* Value of substractBeer equals the user ID where to substract a beer */
-            if($request->name('amount') < 1)
+            if($request->input('amount') < 1)
                 return response()->json(['error' => 'Specified amount incorrect'], 403);
 
             /* Substract a beer from the given user ID */
             $beer = new Beer;
-            $beer->user_id = $request->name('user_id');
-            $beer->house_id = $request->name('house_id');
+            $beer->user_id = $request->input('user_id');
+            $beer->house_id = $request->input('house_id');
             $beer->type = 'beer';
-            $beer->value = -1 * $request->name('amount');
+            $beer->value = -1 * $request->input('amount');
             $beer->performed_by_user_id = Auth::id();
             $beer->created_at = now();
             $beer->updated_at = now();
@@ -98,15 +91,15 @@ class BeerController extends Controller
 
     	case 'addCrate':
             /* Value of addCrate equals the user ID where to add a crate */
-            if($request->name('amount') < 1)
+            if($request->input('amount') < 1)
                 return response()->json(['error' => 'Specified amount incorrect'], 403);
 
             /* Add a crate to the user ID */
             $crate = new Beer;
-            $crate->user_id = $request->name('user_id');
-            $crate->house_id = $request->name('house_id');
+            $crate->user_id = $request->input('user_id');
+            $crate->house_id = $request->input('house_id');
             $crate->type = 'crate';
-            $crate->value = $request->name('amount');
+            $crate->value = $request->input('amount');
             $crate->performed_by_user_id = Auth::id();
             $crate->created_at = now();
             $crate->updated_at = now();
@@ -114,10 +107,10 @@ class BeerController extends Controller
 
             /* Add the beers of the crate to the same user ID */
             $beer = new Beer;
-            $beer->user_id = $request->name('user_id');
-            $beer->house_id = $request->name('house_id');
+            $beer->user_id = $request->input('user_id');
+            $beer->house_id = $request->input('house_id');
             $beer->type = 'beer';
-            $beer->value = $request->name('amount') * 24; /* TODO(PATBRO): implement possibility to add half a crate as well */
+            $beer->value = $request->input('amount') * 24; /* TODO(PATBRO): implement possibility to add half a crate as well */
             $beer->performed_by_user_id = Auth::id();
             $beer->created_at = now();
             $beer->updated_at = now();
