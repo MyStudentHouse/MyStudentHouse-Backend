@@ -27,7 +27,20 @@ class HouseController extends Controller
     }
 
     /**
-     * @par API\HouseController@show (POST)
+     * @par API\HouseController@index (GET)
+     * Returns all student houses
+     *
+     * @retval JSON     Array of all student houses
+     */
+    public function index()
+    {
+        $houses = DB::table('houses')->get();
+
+        return response()->json(['success' => $houses], $this->successStatus);
+    }
+
+    /**
+     * @par API\HouseController@show (GET)
      * Fetch a house
      *
      * @param house_id  The house ID to fetch the data from.
@@ -35,17 +48,9 @@ class HouseController extends Controller
      * @retval JSON     Error 412
      * @retval JSON     Success 200
      */
-    public function show(Request $request)
+    public function show($house_id)
     {
-        $validator = Validator::make($request->all(), [
-            'house_id' => 'required',
-        ]);
-
-        if($validator->fails() == true) {
-            return response()->json(['error' => $validator->errors()], $this->invalidStatus);
-        }
-
-        $house = DB::table('houses')->where('id', $request->input('house_id'))->get();
+        $house = DB::table('houses')->where('id', $house_id)->get();
 
         return response()->json(['success' => $house], $this->successStatus);
     }
@@ -75,6 +80,7 @@ class HouseController extends Controller
         $house = new House;
         $house->name = $input['name'];
         $house->description = $input['description'];
+        /* TODO(PATBRO): implement possibility to upload an image */
         $house->created_by = Auth::id();
         $house->save();
 
@@ -88,9 +94,18 @@ class HouseController extends Controller
         return response()->json(['success' => $house], $this->successStatus);
     }
 
-    private function userBelongsToHouse($house_id, $user_id)
+    /**
+     * @par HouseController@userBelongsToHouse
+     * Only for internal usage.
+     *
+     * @param house_id
+     * @param user_id
+     *
+     * @retval bool
+     */
+    public function userBelongsToHouse($house_id, $user_id)
     {
-        if(DB::table('users_per_houses')->where('user_id', $user_id)->where('house_id', $house_id)->exists() == true) {
+        if(DB::table('users_per_houses')->where('user_id', $user_id)->where('house_id', $house_id)->where('deleted', false)->exists() == true) {
             return true;
         } else {
             return false;
@@ -98,28 +113,17 @@ class HouseController extends Controller
     }
 
     /**
-     * @par API\HouseController@validateUser (POST)
-     * Validate whether a user is part of a house
+     * @par API\HouseController@userBelongsTo (GET)
+     * Obtain to which house(s) the current user belongs.
      *
-     * @param house_id
-     * @param user_id
-     *
-     * @retval JSON     Error 412
-     * @retval JSON     Success 200
+     * @retval JSON    Success 200
      */
-     public function validateUser(Request $request)
-     {
-         $validator = Validator::make($request->all(), [
-            'house_id' => 'required|integer',
-            'user_id' => 'required|integer',
-         ]);
+    public function userBelongsTo()
+    {
+        $houses = DB::table('users_per_houses')->where('user_id', Auth::id())->where('deleted', false)->get();
 
-         if($validator->fails() == true) {
-             return response()->json(['error' => $validator->errors()], $this->invalidStatus);
-         }
-
-        return response()->json(['success' => $this->userBelongsToHouse($request->input('house_id'), $request->input('user_id'))], $this->successStatus);
-     }
+        return response()->json(['success' => $houses], $this->successStatus);
+    }
 
     /**
      * @par API\HouseController@assignUser (POST)
@@ -145,7 +149,7 @@ class HouseController extends Controller
         }
 
         /* Verify if user is authorised to add other users to a student house */
-        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $request->input('house_id'))->exists() == true) {
+        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $request->input('house_id'))->exists() == false) {
             return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->invalidStatus);
         }
 
@@ -165,16 +169,16 @@ class HouseController extends Controller
     }
 
     /**
-     * @par API\HouseController@deleteUser (POST)
-     * Delete a user from a house.
+     * @par API\HouseController@removeUser (POST)
+     * Remove a user from a house.
      *
-     * @param house_id  House ID to delete the user from (required).
-     * @param user_id   ID of the user to delete from the corresponding house (required).
+     * @param house_id  House ID to remove the user from (required).
+     * @param user_id   ID of the user to remove from the corresponding house (required).
      *
      * @retval JSON     Error 412
      * @retval JSON     Success 200
      */
-    public function deleteUser(Request $request)
+    public function removeUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'house_id' => 'required|integer',
@@ -192,12 +196,10 @@ class HouseController extends Controller
         }
 
         /* Check if the user to remove belongs to this house */
-        if(userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
+        if($this->userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
             /* Set deleted to true */
             /* TODO(PATBRO): first check whether beer and WBW balance is even */
-            $users_per_houses = DB::table('users_per_houses')->where('user_id', $request->name('user_id'))->where('house_id', $request->name('house_id'))->get();
-            $users_per_houses->deleted = true;
-            $users_per_houses->save();
+            $users_per_houses = DB::table('users_per_houses')->where('user_id', $request->input('user_id'))->where('house_id', $request->input('house_id'))->update(['deleted' => true]);
         } else {
             /* TODO(PATBRO): make error less descriptive due to security reasons, otherwise this could be brute forced */
             return response()->json(['error' => 'User does not belong to this house'], $this->invalidStatus);
