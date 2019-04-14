@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\API;
 
+use Auth;
 use App\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Validator;
 
 class UserController extends Controller
@@ -14,9 +14,14 @@ class UserController extends Controller
     public $unauthorisedStatus = 401;
 
     /**
-     * login api
+     * @par API\UserController@login (POST)
+     * Login to the application.
      *
-     * @return \Illuminate\Http\Response
+     * @param email     Email address of the user
+     * @param password  Password of the user
+     *
+     * @retval JSON     Unauthorised
+     * @retval JSON     Token to identify the logged in user
      */
     public function login()
     {
@@ -30,9 +35,10 @@ class UserController extends Controller
     }
 
     /**
-     * logout api
+     * @par API\UserController@logout (POST)
+     * Perform a POST (to prevent XSS) to this route to log the user out.
      *
-     * @return \Illuminate\Http\Response
+     * @return JSON     Success
      */
     public function logout(Request $request)
     {
@@ -41,9 +47,15 @@ class UserController extends Controller
     }
 
     /**
-     * register api
+     * @par API\UserController@register (POST)
+     * Register a new user.
      *
-     * @return \Illuminate\Http\Response
+     * @param name              Name of the new user
+     * @param email             Email address of the new user
+     * @param password          Password of the new user
+     * @param confirm_password  Should be the same value as 'password'
+     *
+     * @retval JSON     Success
      */
     public function register(Request $request)
     {
@@ -68,42 +80,35 @@ class UserController extends Controller
     }
 
     /**
-     * details api
+     * @par API\UserController@getDetails (POST)
+     * Retrieve the details of the current user.
      *
-     * @return \Illuminate\Http\Response
+     * @retval JSON     Success
      */
-    public function details()
+    public function getDetails()
     {
         $user = Auth::user();
         return response()->json(['success' => $user], $this->successStatus);
     }
 
     /**
-     * updateDetails API
+     * @par API\UserController@updateDetails (POST)
+     * Update the details of the current user.
      *
-     * @return \Illuminate\Htpp\Response
+     * @param image     Path to the profile image of the user
+     * @param email     Email address of the user
+     * @param phone     Phone number of the user
+     * @param iban      IBAN of the user
+     *
+     * @retval JSON     Success
      */
     public function updateDetails(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id' => 'required',
-            'email' => 'required|email',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], $this->unauthorisedStatus);
-        }
-
         $user = Auth::user();
-        /* Validate user */
-        if($user->id != $request->name('id')) {
-            return response()->json(['error' => 'Unauthorised'], $this->unauthorisedStatus);
-        }
-
-        $user->image = $request->name('image');
-        $user->email = $request->name('email');
-        $user->phone = $request->name('phone'); /* TODO(PATBRO): write a validation rule to validate phone numbers */
-        $user->iban = $request->name('iban'); /* TODO(PATBRO): write a validation rule to validate an IBAN */
+        $user->image = $request->input('image');
+        $user->email = $request->input('email');
+        $user->phone = $request->input('phone'); /* TODO(PATBRO): write a validation rule to validate phone numbers */
+        $user->iban = $request->input('iban'); /* TODO(PATBRO): write a validation rule to validate an IBAN */
         $user->save();
 
         return response()->json(['success' => $user], $this->successStatus);
