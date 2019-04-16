@@ -87,7 +87,7 @@ class HouseController extends Controller
         /* Add the user who created the house to the house */
         $users_per_houses = new UsersPerHouses;
         $users_per_houses->house_id = $house->id;
-        $users_per_houses->user_id = 1;
+        $users_per_houses->user_id = Auth::id();
         $users_per_houses->role = 1; /* Standard, highest role */
         $users_per_houses->save();
 

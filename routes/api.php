@@ -33,6 +33,7 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::get('house', 'API\HouseController@index')->middleware('cors');
     Route::get('house/user', 'API\HouseController@userBelongsTo')->middleware('cors');
     Route::get('house/{house_id}', 'API\HouseController@show')->middleware('cors');
+    Route::post('house/create', 'API\HouseController@store')->middleware('cors');
     Route::post('house/assign', 'API\HouseController@assignUser')->middleware('cors');
     Route::post('house/remove', 'API\HouseController@removeUser')->middleware('cors');
 });
