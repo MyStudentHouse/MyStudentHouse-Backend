@@ -22,7 +22,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::group(['middleware' => 'auth:api'], function() {
     Route::get('details', 'API\UserController@getDetails')->middleware('cors');
     Route::post('details', 'API\UserController@updateDetails')->middleware('cors');
-    Route::post('logout', ['as' => 'logout', 'uses' => 'API\UserController@logout'])->middleware('cors');
 
     Route::get('beer/{house_id}', 'API\BeerController@show')->middleware('cors');
     Route::post('beer', 'API\BeerController@store')->middleware('cors');
@@ -39,6 +38,7 @@ Route::group(['middleware' => 'auth:api'], function() {
 });
 
 Route::post('login', ['as' => 'login', 'uses' => 'API\UserController@login'])->middleware('cors');
+Route::post('logout', ['as' => 'logout', 'uses' => 'API\UserController@logout'])->middleware('cors');
 Route::post('register', 'API\UserController@register')->middleware('cors');
 
 Route::post('password/email', ['as' => 'password.email', 'uses' => 'Auth\ForgotPasswordController@sendResetLinkEmail'])->middleware('cors');
