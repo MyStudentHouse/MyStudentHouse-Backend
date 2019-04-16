@@ -1,4 +1,8 @@
 <?php
+/** @file UserController.php
+ *
+ *  The user controller holds the functionality to register new users, login existing users and fetch details of users.
+ */
 
 namespace App\Http\Controllers\API;
 
@@ -27,7 +31,7 @@ class UserController extends Controller
     {
         if(Auth::attempt(['email' => request('email'), 'password' => request('password')])){
             $user = Auth::user();
-            $success['token'] = $user->createToken('MyStudentHouse')-> accessToken;
+            $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
             return response()->json(['success' => $success], $this->successStatus);
         } else {
             return response()->json(['error' => 'Unauthorised'], $this->unauthorisedStatus);
