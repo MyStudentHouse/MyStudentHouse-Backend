@@ -15,6 +15,7 @@ use Validator;
 class UserController extends Controller
 {
     public $successStatus = 200;
+    public $errorStatus = 400;
     public $unauthorisedStatus = 401;
 
     /**
@@ -34,7 +35,7 @@ class UserController extends Controller
             $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
             return response()->json(['success' => $success], $this->successStatus);
         } else {
-            return response()->json(['error' => 'Unauthorised'], $this->unauthorisedStatus);
+            return response()->json(['error' => 'Login failed. Please check your credentials.'], $this->errorStatus);
         }
     }
 
@@ -71,7 +72,7 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error'=>$validator->errors()], $this->unauthorisedStatus);
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
         $input = $request->all();
@@ -80,7 +81,7 @@ class UserController extends Controller
         $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
         $success['name'] = $user->name;
 
-        return response()->json(['success'=>$success], $this->successStatus);
+        return response()->json(['success' => $success], $this->successStatus);
     }
 
     /**
