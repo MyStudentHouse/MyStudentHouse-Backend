@@ -30,7 +30,7 @@ class UserController extends Controller
      */
     public function login()
     {
-        if(Auth::attempt(['email' => request('email'), 'password' => request('password')])){
+        if(Auth::attempt(['email' => request('email'), 'password' => request('password')])) {
             $user = Auth::user();
             $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
             return response()->json(['success' => $success], $this->successStatus);
@@ -47,8 +47,12 @@ class UserController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
-        return response()->json(['success' => 'You are successfully logged out'],  $this->successStatus);
+        if(Auth::check()) {
+            Auth::user()->token()->revoke();
+            return response()->json(['success' => 'You are successfully logged out'],  $this->successStatus);
+        } else {
+            return response()->json(['error' => 'Logout failed'],  $this->errorStatus);
+        }
     }
 
     /**
@@ -66,7 +70,7 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required',
-            'email' => 'required|email',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required',
             'confirm_password' => 'required|same:password',
         ]);
@@ -78,6 +82,8 @@ class UserController extends Controller
         $input = $request->all();
         $input['password'] = bcrypt($input['password']);
         $user = User::create($input);
+        $user->sendEmailVerificationNotification();
+
         $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
         $success['name'] = $user->name;
 
@@ -92,8 +98,12 @@ class UserController extends Controller
      */
     public function getDetails()
     {
-        $user = Auth::user();
-        return response()->json(['success' => $user], $this->successStatus);
+        if(Auth::check()) {
+            $user = Auth::user();
+            return response()->json(['success' => $user], $this->successStatus);
+        } else {
+            return response()->json(['failed' => ''], $this->errorStatus);
+        }
     }
 
     /**
