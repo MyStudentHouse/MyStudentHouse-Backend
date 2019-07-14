@@ -24,6 +24,31 @@ class BeerController extends Controller
         // $this->middleware('auth');
     }
 
+    public function initialize($user_id, $house_id)
+    {
+        /* Add a crate to the user ID */
+        $crate = new Beer;
+        $crate->user_id = $user_id;
+        $crate->house_id = $house_id;
+        $crate->type = 'crate';
+        $crate->value = 0;
+        $crate->performed_by_user_id = Auth::id();
+        $crate->created_at = now();
+        $crate->updated_at = now();
+        $crate->save();
+
+        /* Add the beers of the crate to the same user ID */
+        $beer = new Beer;
+        $beer->user_id = $user_id;
+        $beer->house_id = $house_id;
+        $beer->type = 'beer';
+        $beer->value = 0;
+        $beer->performed_by_user_id = Auth::id();
+        $beer->created_at = now();
+        $beer->updated_at = now();
+        $beer->save();
+    }
+
     /**
      * @par API\BeerController@show (GET)
      * Get all the beers from the database for a certain house.

@@ -24,6 +24,7 @@ class VerificationController extends Controller
     use VerifiesEmails;
 
     public $successStatus = 200;
+    public $errorStatus = 400;
 
     /**
      * Create a new controller instance.
@@ -48,7 +49,7 @@ class VerificationController extends Controller
         $date = date("Y-m-d g:i:s");
         $user->email_verified_at = $date;
         $user->save();
-        return response()->json(['success' => 'Email verified'], $this->successStatus);
+        return response()->json(['success' => 'Email address verified'], $this->successStatus);
     }
 
     /**
@@ -60,10 +61,10 @@ class VerificationController extends Controller
     public function resend(Request $request)
     {
         if($request->user()->hasVerifiedEmail()) {
-            return response()->json('User already have verified email!', 422);
+            return response()->json(['failed' => 'Email address already verified'], $this->errorStatus);
         }
 
         $request->user()->sendEmailVerificationNotification();
-        return response()->json('The notification has been resubmitted');
+        return response()->json(['success' => 'Verification email resend'], $this->successStatus);
     }
 }
