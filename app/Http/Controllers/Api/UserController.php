@@ -10,10 +10,14 @@ use Auth;
 use App\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Foundation\Auth\VerifiesEmails;
 use Validator;
 
 class UserController extends Controller
 {
+    use VerifiesEmails;
+
     public $successStatus = 200;
     public $errorStatus = 400;
     public $unauthorisedStatus = 401;
@@ -33,8 +37,10 @@ class UserController extends Controller
         if(Auth::attempt(['email' => request('email'), 'password' => request('password')])) {
             $user = Auth::user();
             $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
+            Log::info("Login for user ID ". $user->id ." succeeded");
             return response()->json(['success' => $success], $this->successStatus);
         } else {
+            Log::info("Login for user ID ". $user->id ." failed");
             return response()->json(['error' => 'Login failed. Please check your credentials.'], $this->errorStatus);
         }
     }
@@ -49,8 +55,10 @@ class UserController extends Controller
     {
         if(Auth::check()) {
             Auth::user()->token()->revoke();
+            Log::info("User ID ". $user->id ." log out successful");
             return response()->json(['success' => 'You are successfully logged out'],  $this->successStatus);
         } else {
+            Log::info("User ID ". $user->id ." log out failed");
             return response()->json(['error' => 'Logout failed'],  $this->errorStatus);
         }
     }
@@ -82,11 +90,13 @@ class UserController extends Controller
         $input = $request->all();
         $input['password'] = bcrypt($input['password']);
         $user = User::create($input);
-        $user->sendEmailVerificationNotification();
 
         $success['token'] = $user->createToken('MyStudentHouse')->accessToken;
         $success['name'] = $user->name;
 
+        $user->sendEmailVerificationNotification();
+
+        Log::info("Registration for user ID ". $user->id ." succeeded");
         return response()->json(['success' => $success], $this->successStatus);
     }
 
@@ -100,8 +110,10 @@ class UserController extends Controller
     {
         if(Auth::check()) {
             $user = Auth::user();
+            Log::info("Obtaining details for user ID ". $user->id ." succeeded");
             return response()->json(['success' => $user], $this->successStatus);
         } else {
+            Log::info("Obtaining details for user ID ". $user->id ." failed");
             return response()->json(['failed' => ''], $this->errorStatus);
         }
     }
@@ -126,6 +138,7 @@ class UserController extends Controller
         $user->iban = $request->input('iban'); /* TODO(PATBRO): write a validation rule to validate an IBAN */
         $user->save();
 
+        Log::info("Details for user ID ". $user->id ." were updated successfully");
         return response()->json(['success' => $user], $this->successStatus);
     }
 }
