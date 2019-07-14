@@ -21,25 +21,32 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::group(['middleware' => 'auth:api'], function() {
     Route::get('details', 'API\UserController@getDetails')->middleware('cors');
-    Route::post('details', 'API\UserController@updateDetails')->middleware('cors');
+    Route::post('details', 'API\UserController@updateDetails')->middleware('cors', 'verified');
 
     Route::get('beer/{house_id}', 'API\BeerController@show')->middleware('cors');
-    Route::post('beer', 'API\BeerController@store')->middleware('cors');
+    Route::post('beer', 'API\BeerController@store')->middleware('cors', 'verified');
 
     Route::post('container', 'API\ContainerController@show')->middleware('cors');
-    Route::post('container/update', 'API\ContainerController@updateContainerTurns')->middleware('cors');
+    Route::post('container/update', 'API\ContainerController@updateContainerTurns')->middleware('cors', 'verified');
 
     Route::get('house', 'API\HouseController@index')->middleware('cors');
     Route::get('house/user', 'API\HouseController@userBelongsTo')->middleware('cors');
     Route::get('house/{house_id}', 'API\HouseController@show')->middleware('cors');
-    Route::post('house/create', 'API\HouseController@store')->middleware('cors');
-    Route::post('house/assign', 'API\HouseController@assignUser')->middleware('cors');
-    Route::post('house/remove', 'API\HouseController@removeUser')->middleware('cors');
+    Route::post('house/create', 'API\HouseController@store')->middleware('cors', 'verified');
+    Route::post('house/assign', 'API\HouseController@assignUser')->middleware('cors', 'verified');
+    Route::post('house/remove', 'API\HouseController@removeUser')->middleware('cors', 'verified');
+
+    Route::post('logout', ['as' => 'logout', 'uses' => 'API\UserController@logout'])->middleware('cors');
+});
+
+Route::group(['middleware' => 'auth:api'], function() {
+    Route::get('verify/resend', 'API\VerificationController@resend')->name('verification.resend');
 });
 
 Route::post('login', ['as' => 'login', 'uses' => 'API\UserController@login'])->middleware('cors');
-Route::post('logout', ['as' => 'logout', 'uses' => 'API\UserController@logout'])->middleware('cors');
 Route::post('register', 'API\UserController@register')->middleware('cors');
+
+Route::get('verify/{id}', 'API\VerificationController@verify')->name('verification.verify');
 
 Route::post('password/email', ['as' => 'password.email', 'uses' => 'Auth\ForgotPasswordController@sendResetLinkEmail'])->middleware('cors');
 Route::post('password/reset', ['as' => 'password.reset', 'uses' => 'Auth\ResetPasswordController@reset'])->middleware('cors');
