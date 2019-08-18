@@ -40,7 +40,7 @@ class UserController extends Controller
             Log::info("Login for user ID ". $user->id ." succeeded");
             return response()->json(['success' => $success], $this->successStatus);
         } else {
-            Log::info("Login for user ID ". $user->id ." failed");
+            Log::info("Login for email ". request('email') ." failed");
             return response()->json(['error' => 'Login failed. Please check your credentials.'], $this->errorStatus);
         }
     }
@@ -54,11 +54,12 @@ class UserController extends Controller
     public function logout(Request $request)
     {
         if(Auth::check()) {
-            Auth::user()->token()->revoke();
+            $user = Auth::user();
+            $user->token()->revoke();
             Log::info("User ID ". $user->id ." log out successful");
             return response()->json(['success' => 'You are successfully logged out'],  $this->successStatus);
         } else {
-            Log::info("User ID ". $user->id ." log out failed");
+            Log::info("Log out failed");
             return response()->json(['error' => 'Logout failed'],  $this->errorStatus);
         }
     }
@@ -113,7 +114,7 @@ class UserController extends Controller
             Log::info("Obtaining details for user ID ". $user->id ." succeeded");
             return response()->json(['success' => $user], $this->successStatus);
         } else {
-            Log::info("Obtaining details for user ID ". $user->id ." failed");
+            Log::info("Obtaining details failed");
             return response()->json(['failed' => ''], $this->errorStatus);
         }
     }
