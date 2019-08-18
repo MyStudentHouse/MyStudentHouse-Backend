@@ -80,8 +80,8 @@ class ContainerController extends Controller
         $last_turn = $container->date;
         /* Determine next container turn by looping through all users */
     	foreach($users as $user) {
-            if(i > count($users)) {
-                i = 0;
+            if($i > count($users)) {
+                $i = 0;
             }
 
             /* TODO(PATBRO): also consider performed_by_user_id when generating new container turns */
