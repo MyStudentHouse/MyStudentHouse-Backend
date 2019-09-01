@@ -16,8 +16,14 @@ class VerifyEmailNotification extends VerifyEmailBase
     */
     protected function verificationUrl($notifiable)
     {
-        return URL::temporarySignedRoute(
-        'verification.verify', Carbon::now()->addMinutes(60), ['id' => $notifiable->getKey()]
-        );
+        /* Create a temporary signed API route with an asbolute path */
+        $url = URL::temporarySignedRoute('verification.verify', Carbon::now()->addMinutes(60), ['id' => $notifiable->getKey()]);
+
+        /* Parse the URL */
+        $query_str = parse_url($url, PHP_URL_QUERY);
+        parse_str($query_str, $query_params);
+
+        /* Return the full path to be used in the email (for the front-end) */
+        return config('app.url') ."/verify/". $notifiable->getKey() ."/". $query_params['expires'] ."/". $query_params['signature'];
     }
 }
