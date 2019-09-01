@@ -43,8 +43,7 @@ class VerificationController extends Controller
     * @param \Illuminate\Http\Request $request
     * @return \Illuminate\Http\Response
     */
-    public function verify(Request $request) {
-        $user_id = $request->input('id');
+    public function verify($user_id) {
         $user = User::findOrFail($user_id);
         $date = date("Y-m-d g:i:s");
         $user->email_verified_at = $date;
