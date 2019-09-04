@@ -46,7 +46,7 @@ Route::group(['middleware' => 'auth:api'], function() {
 Route::post('login', ['as' => 'login', 'uses' => 'Api\UserController@login'])->middleware('cors');
 Route::post('register', 'Api\UserController@register')->middleware('cors');
 
-Route::get('verify/{id}', 'Api\VerificationController@verify')->name('verification.verify');
+Route::get('verify/{id}', 'Api\VerificationController@verify')->name('verification.verify')->middleware('cors');
 
 Route::post('password/email', ['as' => 'password.email', 'uses' => 'Auth\ForgotPasswordController@sendResetLinkEmail'])->middleware('cors');
 Route::post('password/reset', ['as' => 'password.reset', 'uses' => 'Auth\ResetPasswordController@reset'])->middleware('cors');
