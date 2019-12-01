@@ -70,33 +70,6 @@ class RegisterController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        /* Fetch latest container entry */
-        $container = Containers::orderBy('date', 'desc')->first();
-
-        /* Add container turn for the newly created user */
-        $container_turn = new Containers;
-        $container_turn->user_id = $user->id;
-        if($container == NULL)
-            $container_turn->date = today()->addWeeks(2);
-        else
-            $container_turn->date = Carbon::parse($container->date)->addWeeks(2);
-        $container_turn->save();
-
-        /* Initialize user with zero crates and zero beers */
-        $beer = new Beer;
-        $beer->user_id = $user->id;
-        $beer->type = 'beer';
-        $beer->value = 0;
-        $beer->performed_by_user_id = $user->id;
-        $beer->save();
-
-        $crate = new Beer;
-        $crate->user_id = $user->id;
-        $crate->type = 'crate';
-        $crate->value = 0;
-        $crate->performed_by_user_id = $user->id;
-        $crate->save();
-
         return $user;
     }
 }

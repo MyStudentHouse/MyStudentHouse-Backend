@@ -83,6 +83,7 @@ class BeerController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required',
+            'house_id' => 'required',
             'action' => 'required', /* TODO(PATBRO): consider to change this to an enum */
             'amount' => 'required',
         ]);
@@ -143,21 +144,22 @@ class BeerController extends Controller
             break;
 
     	case 'returnCrate':
-    		/* Value of returnCrate equals the user ID of the logged in user */
-    		if($input['action'] != Auth::id())
-    			return response()->json(['error' => 'User action not permitted'], 403);
+            /* Value of returnCrate equals the user ID of the logged in user */
+            if($input['action'] != Auth::id())
+                return response()->json(['error' => 'User action not permitted'], 403);
 
-    		if($input['amount'] < 1)
+            if($input['amount'] < 1)
                 return response()->json(['error' => 'Specified amount incorrect'], 403);
 
-    		$beer = new Beer;
-    		$beer->user_id = NULL;
-    		$beer->type = 'crate';
-    		$beer->value = -1 * $input['amount']; /* TODO(PATBRO): implement possibility to return (single) bottles as well */
-    		$beer->performed_by_user_id = Auth::id();
-    		$beer->created_at = now();
-    		$beer->updated_at = now();
-    		$beer->save();
+            $beer = new Beer;
+            $beer->user_id = NULL;
+            $beer->house_id = $request->input('house_id');
+            $beer->type = 'crate';
+            $beer->value = -1 * $input['amount']; /* TODO(PATBRO): implement possibility to return (single) bottles as well */
+            $beer->performed_by_user_id = Auth::id();
+            $beer->created_at = now();
+            $beer->updated_at = now();
+            $beer->save();
             break;
 
     	default:
