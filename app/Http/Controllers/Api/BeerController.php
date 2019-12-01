@@ -144,11 +144,7 @@ class BeerController extends Controller
             break;
 
     	case 'returnCrate':
-            /* Value of returnCrate equals the user ID of the logged in user */
-            if($input['action'] != Auth::id())
-                return response()->json(['error' => 'User action not permitted'], 403);
-
-            if($input['amount'] < 1)
+            if($request->input('amount') < 1)
                 return response()->json(['error' => 'Specified amount incorrect'], 403);
 
             $beer = new Beer;
