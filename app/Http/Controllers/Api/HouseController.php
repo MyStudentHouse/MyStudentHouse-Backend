@@ -65,9 +65,29 @@ class HouseController extends Controller
      * @retval JSON     Error 412
      * @retval JSON     Success 200
      */
-    public function showUsers($house_id)
+    public function showUsers(Request $request)
     {
-        $users_per_houses = DB::table('users_per_houses')->where('house_id', $house_id)->get();
+        $validator = Validator::make($request->all(), [
+            'house_id' => 'required|integer',
+        ]);
+
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        if($this->userBelongsToHouse($request->input('house_id'), Auth::id()) == false) {
+            return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+        }
+
+        $users_per_houses = DB::table('users_per_houses')->where('house_id', $request->input('house_id'))->get();
+
+        /* TODO(PATBRO): change to usage of Eloquent union instead of foreaching through array */
+        $users = [];
+        foreach ($user_per_houses as $user_per_house) {
+            /* Append user details to users array which will be returned in the end */
+            $user = DB::table('users')->where('user_id', $users_per_house['user_id'])->get();
+            array_push($users, $user);
+        }
 
         return response()->json(['success' => $users], $this->successStatus);
     }
