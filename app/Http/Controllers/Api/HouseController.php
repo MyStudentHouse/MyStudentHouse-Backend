@@ -7,6 +7,7 @@
 namespace App\Http\Controllers\API;
 
 use Auth;
+use App\Beer;
 use App\House;
 use App\UsersPerHouses;
 use App\Http\Controllers\Controller;
@@ -91,6 +92,29 @@ class HouseController extends Controller
         $users_per_houses->role = 1; /* Standard, highest role */
         $users_per_houses->save();
 
+        /* TODO: make use of initialize function of BeerController instead */
+        /* Add a crate to the user ID */
+        $crate = new Beer;
+        $crate->user_id = $request->input('user_id');
+        $crate->house_id = $request->input('house_id');
+        $crate->type = 'crate';
+        $crate->value = 0;
+        $crate->performed_by_user_id = Auth::id();
+        $crate->created_at = now();
+        $crate->updated_at = now();
+        $crate->save();
+
+        /* Add the beers of the crate to the same user ID */
+        $beer = new Beer;
+        $beer->user_id = $request->input('user_id');
+        $beer->house_id = $request->input('house_id');
+        $beer->type = 'beer';
+        $beer->value = 0;
+        $beer->performed_by_user_id = Auth::id();
+        $beer->created_at = now();
+        $beer->updated_at = now();
+        $beer->save();
+
         return response()->json(['success' => $house], $this->successStatus);
     }
 
@@ -156,14 +180,37 @@ class HouseController extends Controller
         if($this->userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
             /* User already belongs to this house */
             return response()->json(['error' => 'User already belongs to this house'], $this->errorStatus);
-        } else {
-            /* User does not yet belong to this house, so add the user to the house */
-            $users_per_houses = new UsersPerHouses;
-            $users_per_houses->house_id = $request->input('house_id');
-            $users_per_houses->user_id = $request->input('user_id');
-            $users_per_houses->role = $request->input('role');
-            $users_per_houses->save();
         }
+
+        /* User does not yet belong to this house, so add the user to the house */
+        $users_per_houses = new UsersPerHouses;
+        $users_per_houses->house_id = $request->input('house_id');
+        $users_per_houses->user_id = $request->input('user_id');
+        $users_per_houses->role = $request->input('role');
+        $users_per_houses->save();
+
+        /* TODO: make use of initialize function of BeerController instead */
+        /* Add a crate to the user ID */
+        $crate = new Beer;
+        $crate->user_id = $request->input('user_id');
+        $crate->house_id = $request->input('house_id');
+        $crate->type = 'crate';
+        $crate->value = 0;
+        $crate->performed_by_user_id = Auth::id();
+        $crate->created_at = now();
+        $crate->updated_at = now();
+        $crate->save();
+
+        /* Add the beers of the crate to the same user ID */
+        $beer = new Beer;
+        $beer->user_id = $request->input('user_id');
+        $beer->house_id = $request->input('house_id');
+        $beer->type = 'beer';
+        $beer->value = 0;
+        $beer->performed_by_user_id = Auth::id();
+        $beer->created_at = now();
+        $beer->updated_at = now();
+        $beer->save();
 
         return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
