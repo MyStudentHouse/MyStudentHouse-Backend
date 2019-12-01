@@ -152,10 +152,10 @@ class BeerController extends Controller
                 return response()->json(['error' => 'Specified amount incorrect'], 403);
 
             $beer = new Beer;
-            $beer->user_id = NULL;
+            $beer->user_id = $request->input('user_id');
             $beer->house_id = $request->input('house_id');
             $beer->type = 'crate';
-            $beer->value = -1 * $input['amount']; /* TODO(PATBRO): implement possibility to return (single) bottles as well */
+            $beer->value = -1 * $request->input('amount'); /* TODO(PATBRO): implement possibility to return (single) bottles as well */
             $beer->performed_by_user_id = Auth::id();
             $beer->created_at = now();
             $beer->updated_at = now();
