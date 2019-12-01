@@ -44,7 +44,7 @@ class HouseController extends Controller
      * @par API\HouseController@show (GET)
      * Fetch a house
      *
-     * @param house_id  The house ID to fetch the data from.
+     * @param house_id  The house ID to fetch the data for.
      *
      * @retval JSON     Error 412
      * @retval JSON     Success 200
@@ -54,6 +54,22 @@ class HouseController extends Controller
         $house = DB::table('houses')->where('id', $house_id)->get();
 
         return response()->json(['success' => $house], $this->successStatus);
+    }
+
+    /**
+     * @par API\HouseController@showUsers (GET)
+     * Fetch all users belonging to a house
+     *
+     * @param house_id  The house ID to fetch the users for.
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function showUsers($house_id)
+    {
+        $users_per_houses = DB::table('users_per_houses')->where('house_id', $house_id)->get();
+
+        return response()->json(['success' => $users], $this->successStatus);
     }
 
     /**
@@ -185,7 +201,7 @@ class HouseController extends Controller
 
         $user_id = DB::table('users')->where('email', $request->input('user_email'))->get();
 
-        if($this->userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
+        if($this->userBelongsToHouse($request->input('house_id'), $user_id) == true) {
             /* User already belongs to this house */
             return response()->json(['error' => 'User already belongs to this house'], $this->errorStatus);
         }
