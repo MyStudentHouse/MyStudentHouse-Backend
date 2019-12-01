@@ -199,7 +199,7 @@ class HouseController extends Controller
             return response()->json(['error' => 'User not found'], $this->errorStatus);
         }
 
-        $user_id = DB::table('users')->where('email', $request->input('user_email'))->get();
+        $user_id = DB::table('users')->where('email', $request->input('user_email'))->value('id');
 
         if($this->userBelongsToHouse($request->input('house_id'), $user_id) == true) {
             /* User already belongs to this house */
