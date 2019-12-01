@@ -153,9 +153,9 @@ class HouseController extends Controller
      * @par API\HouseController@assignUser (POST)
      * Assign a user to an already existing house.
      *
-     * @param house_id  House ID to add the user to (required).
-     * @param user_id   ID of the user to add to the corresponding house (required).
-     * @param role      Role of the user to add (required, between 1 and 9).
+     * @param house_id      House ID to add the user to (required).
+     * @param user_email    Email address of the user to add to the corresponding house (required). Based on user input.
+     * @param role          Role of the user to add (required, between 1 and 9).
      *
      * @retval JSON     Error 412
      * @retval JSON     Success 200
@@ -164,7 +164,7 @@ class HouseController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'house_id' => 'required|integer',
-            'user_id' => 'required|integer',
+            'user_email' => 'required|email',
             'role' => 'required|integer|between:1,9', /* Role must be between 1 and 3 */
         ]);
 
@@ -177,6 +177,14 @@ class HouseController extends Controller
             return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->errorStatus);
         }
 
+        /* TODO(PATBRO): replace this implementation because this is considered not secure */
+        if(DB::table('users')->where('email', $request->input('user_email'))->exists() == false) {
+            /* Check if user with this email address exists */
+            return response()->json(['error' => 'User not found'], $this->errorStatus);
+        }
+
+        $user_id = DB::table('users')->where('email', $request->input('user_email'))->get();
+
         if($this->userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
             /* User already belongs to this house */
             return response()->json(['error' => 'User already belongs to this house'], $this->errorStatus);
@@ -185,14 +193,14 @@ class HouseController extends Controller
         /* User does not yet belong to this house, so add the user to the house */
         $users_per_houses = new UsersPerHouses;
         $users_per_houses->house_id = $request->input('house_id');
-        $users_per_houses->user_id = $request->input('user_id');
+        $users_per_houses->user_id = $user_id;
         $users_per_houses->role = $request->input('role');
         $users_per_houses->save();
 
         /* TODO: make use of initialize function of BeerController instead */
         /* Add a crate to the user ID */
         $crate = new Beer;
-        $crate->user_id = $request->input('user_id');
+        $crate->user_id = $user_id;
         $crate->house_id = $request->input('house_id');
         $crate->type = 'crate';
         $crate->value = 0;
@@ -203,7 +211,7 @@ class HouseController extends Controller
 
         /* Add the beers of the crate to the same user ID */
         $beer = new Beer;
-        $beer->user_id = $request->input('user_id');
+        $beer->user_id = $user_id;
         $beer->house_id = $request->input('house_id');
         $beer->type = 'beer';
         $beer->value = 0;
