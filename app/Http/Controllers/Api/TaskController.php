@@ -11,7 +11,21 @@ class TaskController extends Controller
     public $errorStatus = 400;
     public $unauthorisedStatus = 401;
 
-    /* Store a new task belonging to a student house */
+    /**
+      * @par API\TaskController@store (POST)
+      * Create a new task belonging to a certain student house
+      *
+      * @param name             Name of the task to create
+      * @param description      Describes the task in a few concise words
+      * @param house_id         House ID the task will belong to
+      * @param interval         After how many days the task shall repeat itself
+      * @param start_datetime   At which datetime the task shall start
+      * @param reminder         Optional. Boolean which indicates a reminder needs to be sent (default: false)
+      * @param mark_complete    Optional. Boolean which indicates if the task need to be marked as complete (default: false)
+      *
+      * @retval JSON     Success 200
+      * @retval JSON     Failed 200
+      */
     public function store(Request $request)
     {
         // TODO(PATBRO): Add task with general information to database (to a specific house)
@@ -20,7 +34,6 @@ class TaskController extends Controller
             'name' => 'required',
             'description' => 'required',
             'house_id' => 'required',
-            'users' => 'optional', /* TODO(PATBRO): make it possible to assign only a couple of users to a specific task */
             'interval' => 'required',
             'start_datetime' => 'required',
             'reminder' => 'optional|boolean',
@@ -40,8 +53,21 @@ class TaskController extends Controller
         $task->time = $request->input('time');
         $task->reminder = $request->input('reminder');
         $task->mark_complete = $request->input('mark_complete');
+        $task->save();
+
+        return response()->json(['success' => $task->id], $this->successStatus);
     }
 
+    /**
+      * @par API\TaskController@overview (GET)
+      * Retrieve the tasks for a certain house for a certain number of upcoming weeks
+      *
+      * @param house_id     The ID of the house to retrieve the tasks for
+      * @param no_weeks     The number of weeks to return tasks for
+      *
+      * @retval JSON     Success 200
+      * @retval JSON     Failed 200
+      */
     public function overview($house_id, $no_weeks)
     {
         if(app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
@@ -98,7 +124,7 @@ class TaskController extends Controller
 
      /**
       * @par API\TaskController@index (GET)
-      * Gets all the tasks belonging to a student house or user
+      * Retrieve a certain task ID for a certain number of weeks
       *
       * @param task_id      Task to return
       * @param no_weeks     Number of weeks to run the task for
