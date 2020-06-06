@@ -71,7 +71,7 @@ class TaskController extends Controller
     {
         if(app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
             // Return the different tasks for this house
-            $tasks_per_house = DB::table('tasks_per_houses')->where('house_id', $house_id)->get();
+            $tasks = DB::table('tasks')->where('house_id', $house_id)->get();
         }
 
         // Determine earliest start datetime of all tasks assigned to this house
@@ -92,8 +92,10 @@ class TaskController extends Controller
             foreach($tasks as $task) {
                 if ($task->start_datetime >= $day) {
                     $no_iterations_passed = $day - $task->start_datetime;
-                    $assignees = collect(json_decode($task->users));
-                    $assignee = $assignees[($no_iterations_passed / $task->interval) % sizeof($assignees)];
+
+                    $assigned_users = DB::table('users_per_task')->where('task_id', $task->id)->get();
+                    // Loop through all users assigned to this task
+                    $assignee = $assigned_users[($no_iterations_passed / $task->interval) % sizeof($users_per_task)];
 
                     // Prepare task to add
                     $task_per_day = array();
