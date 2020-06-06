@@ -18,8 +18,7 @@ class CreateTasksTable extends Migration
             $table->string('name');
             $table->string('description');
             $table->unsignedInteger('house_id');
-            $table->text('users');
-            $table->integer('interval');
+            $table->unsignedInteger('interval');
             $table->datetime('start_datetime'); // At what time?
             $table->boolean('reminder');
             $table->boolean('mark_complete');
