@@ -82,6 +82,7 @@ class TaskController extends Controller
         }
 
         $offset = date($start_datetime, 'w');
+        $tasks_per_week = array();
         $task_per_week = array();
         for($i = $offset; $i < sizeof($tasks_per_day); $i++) {
             array_push($task_per_week, $task_per_day);
@@ -92,7 +93,7 @@ class TaskController extends Controller
             }
         }
 
-        return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+        return response()->json(['success' => $tasks_per_week], $this->successStatus);
     }
 
      /**
@@ -107,7 +108,7 @@ class TaskController extends Controller
       */
     public function index($task_id, $no_weeks)
     {
-        $dbTask = DB:table('tasks')->where('task_id', $task_id)->get();
+        $dbTask = DB::table('tasks')->where('task_id', $task_id)->get();
 
         // Dynamically allocate user for each interval
         $users = collect(json_decode($task->users, true));
