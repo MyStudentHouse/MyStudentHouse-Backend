@@ -73,10 +73,12 @@ class TaskController extends Controller
       */
     public function overview($house_id, $no_weeks)
     {
-        if(app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
-            // Return the different tasks for this house
-            $tasks = DB::table('tasks')->where('house_id', $house_id)->get();
+        if(!app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
+            return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
+
+        // Return the different tasks for this house
+        $tasks = DB::table('tasks')->where('house_id', $house_id)->get();
 
         // Determine earliest start datetime of all tasks assigned to this house
         $start_datetime = date('Y-m-d');
