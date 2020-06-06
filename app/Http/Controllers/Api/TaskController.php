@@ -40,6 +40,10 @@ class TaskController extends Controller
             'mark_complete' => 'optional|boolean',
         ]);
 
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
         if(!app('HouseController::class')->userBelongsToHouse($request->input('house_id'), Auth::id())) {
             return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
@@ -179,14 +183,49 @@ class TaskController extends Controller
         return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
     }
 
-    // Request tasks belonging to a student house, a user or a certain task type
-    public function show(Request $request)
+    /**
+     * @par API\TaskController@assign (POST)
+     * Assign a certain user to a certain task. Only possible if the authenticated user belongs to the same house the task belongs to.
+     * 
+     * @param task_id       ID of the task for the user to assign to
+     * @param user_email    Email address of the user to assign to the task
+     * 
+     * @retval JSON     Success 200
+     * @retval JSON     Failed 200
+     */
+    public function assign(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'house_id' => 'nullable|numeric',
-            'user_id' => 'nullable|numeric',
-            'task' => 'nullable',
+            'task_id' => 'required|integer',
+            'user_email' => 'required|email',
         ]);
+
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        /* TODO(PATBRO): replace this implementation because this is considered not secure */
+        if(DB::table('users')->where('email', $request->input('user_email'))->exists() == false) {
+            /* Check if user with this email address exists */
+            return response()->json(['error' => 'User not found'], $this->errorStatus);
+        }
+
+        $user_id = DB::table('users')->where('email', $request->input('user_email'))->value('id');
+
+        // Retrieve house ID this task belongs to
+        $house_id = DB::table('tasks')->where('id', $request->input('task_id'))->value('house_id');
+
+        if(!app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
+            return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+        }
+
+        // Assign user to this task
+        $users_per_task = new UsersPerTask();
+        $users_per_task->task_id = $request->input('task_id');
+        $users_per_task->user_id = $user_id;
+        $users_per_task->save();
+
+        return response()->json(['success' => $users_per_task], $this->successStatus);
     }
 
     // Request to edit an existing task, return needed data for front-end
