@@ -26,6 +26,11 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::get('beer/{house_id}', 'Api\BeerController@show')->middleware('cors');
     Route::post('beer', 'Api\BeerController@store')->middleware('cors', 'verified');
 
+    Route::post('tasks', 'Api\TaskController@store')->middleware('cors', 'verified');
+    Route::get('tasks/{house_id}/{no_weeks}', 'Api\TaskController@overview')->middleware('cors', 'verified');
+    Route::get('tasks/{house_id}', 'Api\TaskController@task_per_houses')->middleware('cors', 'verified');
+    Route::get('tasks/task/{task_id}/{no_weeks}', 'Api\TaskController@index')->middleware('cors', 'verified');
+
     Route::post('container', 'Api\ContainerController@show')->middleware('cors');
     Route::post('container/update', 'Api\ContainerController@updateContainerTurns')->middleware('cors', 'verified');
 
