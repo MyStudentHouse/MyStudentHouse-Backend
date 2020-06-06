@@ -131,8 +131,8 @@ class HouseController extends Controller
         /* TODO: make use of initialize function of BeerController instead */
         /* Add a crate to the user ID */
         $crate = new Beer;
-        $crate->user_id = $request->input('user_id');
-        $crate->house_id = $request->input('house_id');
+        $crate->user_id = Auth::id();
+        $crate->house_id = $house->id;
         $crate->type = 'crate';
         $crate->value = 0;
         $crate->performed_by_user_id = Auth::id();
@@ -142,8 +142,8 @@ class HouseController extends Controller
 
         /* Add the beers of the crate to the same user ID */
         $beer = new Beer;
-        $beer->user_id = $request->input('user_id');
-        $beer->house_id = $request->input('house_id');
+        $beer->user_id = Auth::id();
+        $beer->house_id = $house->id;
         $beer->type = 'beer';
         $beer->value = 0;
         $beer->performed_by_user_id = Auth::id();
