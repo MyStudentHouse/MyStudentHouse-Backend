@@ -18,8 +18,8 @@ class TaskController extends Controller
       * @param name             Name of the task to create
       * @param description      Describes the task in a few concise words
       * @param house_id         House ID the task will belong to
-      * @param interval         After how many days the task shall repeat itself
-      * @param start_datetime   At which datetime the task shall start
+      * @param interval         After how many days the task shall repeat itself (uint)
+      * @param start_datetime   At which datetime the task shall start (Y/m/d H:i:s)
       * @param reminder         Optional. Boolean which indicates a reminder needs to be sent (default: false)
       * @param mark_complete    Optional. Boolean which indicates if the task need to be marked as complete (default: false)
       *
@@ -48,9 +48,8 @@ class TaskController extends Controller
         $task->name = $request->input('name');
         $task->description = $request->input('description');
         $task->house_id = $request->input('house_id');
-        $task->users = Auth::id();
-        $task->repeat = $request->input('repeat');
-        $task->time = $request->input('time');
+        $task->interval = $request->input('interval');
+        $task->start_datetime = $request->input('start_datetime');
         $task->reminder = $request->input('reminder');
         $task->mark_complete = $request->input('mark_complete');
         $task->save();
