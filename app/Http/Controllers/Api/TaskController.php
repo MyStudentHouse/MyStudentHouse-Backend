@@ -95,42 +95,57 @@ class TaskController extends Controller
             }
         }
 
-        $days = array();
-        for($i = 0; $i < $no_weeks * 7; $i++) { // Smallest interval (is per day)
-            $days.append($datetime);
-        }
-
+        $days = $no_weeks * 7;
         $tasks_per_day = array();
-        foreach($days as $day) {
-            foreach($tasks as $task) {
-                if ($task->start_datetime >= $day) {
-                    $no_iterations_passed = $day - $task->start_datetime;
-
+        for ($i = 0; $i < $days; $i++) {
+            foreach ($tasks as $task) {
+                if ($i % $task->interval == 0) {
+                    // Find assigned users for this task
                     $assigned_users = DB::table('users_per_tasks')->where('task_id', $task->id)->get();
-                    // Loop through all users assigned to this task
-                    $assignee = $assigned_users[($no_iterations_passed / $task->interval) % sizeof($assigned_users)];
+                    $assignees = array();
+                    foreach ($assigned_users as $user) {
+                        $userController = new UserController();
+                        $db_user = $userController->getDetailsPerUserId($user->user_id);
+                        array_push($assignees, $db_user->name);
+                    }
 
-                    // Prepare task to add
-                    $task_per_day = array();
-                    $task_per_day['date'] = $day;
-                    $task_per_day['task_name'] = $task->name;
-                    $task_per_day['assignee'] = $assignee;
-                    // Add task to array
-                    array_push($tasks_per_day, $task_per_day);
+                    if (sizeof($assignees) > 0) {
+                        $db_task = DB::table('tasks')->where('id', $task->id)->get();
+                        // Calculate number of occurrences for the future day we are making the overview for
+                        $occurrence_date = strtotime(date('Y-m-d')) + (24 * 60 * 60 * $i);
+                        $past_occurrences = (($occurrence_date - strtotime($db_task[0]->start_datetime)) / (24 * 60 * 60)) / $db_task[0]->interval;
+                        if ($past_occurrences < -1) {
+                            // There were no past occurrences
+                        } else {
+                            $task_occurrence = array();
+                            $seconds_since_start = $past_occurrences * $db_task[0]->interval * (24 * 60 * 60);
+                            $task_occurrence['name'] = $db_task[0]->name;
+                            $task_occurrence['date'] = date('Y-m-d', strtotime($db_task[0]->start_datetime) + $seconds_since_start);
+                            $task_occurrence['assignee'] = $assignees[$i % sizeof($assignees)];
+                            $task_occurrence['occ'] = $past_occurrences;
+                            array_push($tasks_per_day, $task_occurrence);
+                        }
+                    }
                 }
             }
         }
 
-        $offset = date($start_datetime, 'w');
+        // Populate array with task per week
         $tasks_per_week = array();
-        $task_per_week = array();
-        for($i = $offset; $i < sizeof($tasks_per_day); $i++) {
-            array_push($task_per_week, $task_per_day);
+        for($i = 0; $i < sizeof($tasks_per_day); $i++) {
+            $week = array();
+            $week['week'] = date('W', strtotime($tasks_per_day[$i]['date']));
+            $week['tasks'] = array();
+            while (true) {
+                array_push($week['tasks'], $tasks_per_day[$i]);
+                if(($i + 1) == sizeof($tasks_per_day) || date('W', strtotime($tasks_per_day[$i]['date'])) != date('W', strtotime($tasks_per_day[$i + 1]['date']))) {
+                    break;
+                }
 
-            if (date($tasks_per_day[$i]['date'], 'w') != date($tasks_per_day[$i + 1]['date'], 'w')) {
-                array_push($tasks_per_week, $task_per_week);
-                $task_per_week = array(); // Reset task per week
+                $i++;
             }
+
+            array_push($tasks_per_week, $week);
         }
 
         return response()->json(['success' => $tasks_per_week], $this->successStatus);
