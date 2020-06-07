@@ -7,6 +7,7 @@
 namespace App\Http\Controllers\API;
 
 use Auth;
+use App\Beer;
 use App\House;
 use App\UsersPerHouses;
 use App\Http\Controllers\Controller;
@@ -43,7 +44,7 @@ class HouseController extends Controller
      * @par API\HouseController@show (GET)
      * Fetch a house
      *
-     * @param house_id  The house ID to fetch the data from.
+     * @param house_id  The house ID to fetch the data for.
      *
      * @retval JSON     Error 412
      * @retval JSON     Success 200
@@ -53,6 +54,42 @@ class HouseController extends Controller
         $house = DB::table('houses')->where('id', $house_id)->get();
 
         return response()->json(['success' => $house], $this->successStatus);
+    }
+
+    /**
+     * @par API\HouseController@showUsers (GET)
+     * Fetch all users belonging to a house
+     *
+     * @param house_id  The house ID to fetch the users for.
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function showUsers(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'house_id' => 'required|integer',
+        ]);
+
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        if($this->userBelongsToHouse($request->input('house_id'), Auth::id()) == false) {
+            return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+        }
+
+        $users_per_houses = DB::table('users_per_houses')->where('house_id', $request->input('house_id'))->get();
+
+        /* TODO(PATBRO): change to usage of Eloquent union instead of foreaching through array */
+        $users = [];
+        foreach ($user_per_houses as $user_per_house) {
+            /* Append user details to users array which will be returned in the end */
+            $user = DB::table('users')->where('user_id', $users_per_house['user_id'])->get();
+            array_push($users, $user);
+        }
+
+        return response()->json(['success' => $users], $this->successStatus);
     }
 
     /**
@@ -90,6 +127,29 @@ class HouseController extends Controller
         $users_per_houses->user_id = Auth::id();
         $users_per_houses->role = 1; /* Standard, highest role */
         $users_per_houses->save();
+
+        /* TODO: make use of initialize function of BeerController instead */
+        /* Add a crate to the user ID */
+        $crate = new Beer;
+        $crate->user_id = Auth::id();
+        $crate->house_id = $house->id;
+        $crate->type = 'crate';
+        $crate->value = 0;
+        $crate->performed_by_user_id = Auth::id();
+        $crate->created_at = now();
+        $crate->updated_at = now();
+        $crate->save();
+
+        /* Add the beers of the crate to the same user ID */
+        $beer = new Beer;
+        $beer->user_id = Auth::id();
+        $beer->house_id = $house->id;
+        $beer->type = 'beer';
+        $beer->value = 0;
+        $beer->performed_by_user_id = Auth::id();
+        $beer->created_at = now();
+        $beer->updated_at = now();
+        $beer->save();
 
         return response()->json(['success' => $house], $this->successStatus);
     }
@@ -129,9 +189,9 @@ class HouseController extends Controller
      * @par API\HouseController@assignUser (POST)
      * Assign a user to an already existing house.
      *
-     * @param house_id  House ID to add the user to (required).
-     * @param user_id   ID of the user to add to the corresponding house (required).
-     * @param role      Role of the user to add (required, between 1 and 9).
+     * @param house_id      House ID to add the user to (required).
+     * @param user_email    Email address of the user to add to the corresponding house (required). Based on user input.
+     * @param role          Role of the user to add (required, between 1 and 9).
      *
      * @retval JSON     Error 412
      * @retval JSON     Success 200
@@ -140,7 +200,7 @@ class HouseController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'house_id' => 'required|integer',
-            'user_id' => 'required|integer',
+            'user_email' => 'required|email',
             'role' => 'required|integer|between:1,9', /* Role must be between 1 and 3 */
         ]);
 
@@ -153,17 +213,48 @@ class HouseController extends Controller
             return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->errorStatus);
         }
 
-        if($this->userBelongsToHouse($request->input('house_id'), $request->input('user_id')) == true) {
+        /* TODO(PATBRO): replace this implementation because this is considered not secure */
+        if(DB::table('users')->where('email', $request->input('user_email'))->exists() == false) {
+            /* Check if user with this email address exists */
+            return response()->json(['error' => 'User not found'], $this->errorStatus);
+        }
+
+        $user_id = DB::table('users')->where('email', $request->input('user_email'))->value('id');
+
+        if($this->userBelongsToHouse($request->input('house_id'), $user_id) == true) {
             /* User already belongs to this house */
             return response()->json(['error' => 'User already belongs to this house'], $this->errorStatus);
-        } else {
-            /* User does not yet belong to this house, so add the user to the house */
-            $users_per_houses = new UsersPerHouses;
-            $users_per_houses->house_id = $request->input('house_id');
-            $users_per_houses->user_id = $request->input('user_id');
-            $users_per_houses->role = $request->input('role');
-            $users_per_houses->save();
         }
+
+        /* User does not yet belong to this house, so add the user to the house */
+        $users_per_houses = new UsersPerHouses;
+        $users_per_houses->house_id = $request->input('house_id');
+        $users_per_houses->user_id = $user_id;
+        $users_per_houses->role = $request->input('role');
+        $users_per_houses->save();
+
+        /* TODO: make use of initialize function of BeerController instead */
+        /* Add a crate to the user ID */
+        $crate = new Beer;
+        $crate->user_id = $user_id;
+        $crate->house_id = $request->input('house_id');
+        $crate->type = 'crate';
+        $crate->value = 0;
+        $crate->performed_by_user_id = Auth::id();
+        $crate->created_at = now();
+        $crate->updated_at = now();
+        $crate->save();
+
+        /* Add the beers of the crate to the same user ID */
+        $beer = new Beer;
+        $beer->user_id = $user_id;
+        $beer->house_id = $request->input('house_id');
+        $beer->type = 'beer';
+        $beer->value = 0;
+        $beer->performed_by_user_id = Auth::id();
+        $beer->created_at = now();
+        $beer->updated_at = now();
+        $beer->save();
 
         return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
