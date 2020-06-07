@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
+use Auth;
+use App\Task;
+use App\UsersPerTask;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Validator;
 
 class TaskController extends Controller
 {
@@ -20,8 +25,8 @@ class TaskController extends Controller
       * @param house_id         House ID the task will belong to
       * @param interval         After how many days the task shall repeat itself (uint)
       * @param start_datetime   At which datetime the task shall start (Y/m/d H:i:s)
-      * @param reminder         Optional. Boolean which indicates a reminder needs to be sent (default: false)
-      * @param mark_complete    Optional. Boolean which indicates if the task need to be marked as complete (default: false)
+      * @param reminder         Boolean which indicates a reminder needs to be sent (0 for false, 1 for true)
+      * @param mark_complete    Boolean which indicates if the task need to be marked as complete (0 for false, 1 for true)
       *
       * @retval JSON     Success 200
       * @retval JSON     Failed 200
@@ -31,20 +36,21 @@ class TaskController extends Controller
         // TODO(PATBRO): Add task with general information to database (to a specific house)
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
-            'description' => 'required',
-            'house_id' => 'required',
-            'interval' => 'required',
-            'start_datetime' => 'required',
-            'reminder' => 'optional|boolean',
-            'mark_complete' => 'optional|boolean',
+            'name' => 'required|string',
+            'description' => 'required|string',
+            'house_id' => 'required|integer',
+            'interval' => 'required|integer',
+            'start_datetime' => 'required|date',
+            'reminder' => 'required|boolean',
+            'mark_complete' => 'required|boolean',
         ]);
 
         if($validator->fails() == true) {
             return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
-        if(!app('HouseController::class')->userBelongsToHouse($request->input('house_id'), Auth::id())) {
+        $houseController = new HouseController();
+        if(!$houseController->userBelongsToHouse($request->input('house_id'), Auth::id())) {
             return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
 
@@ -73,7 +79,8 @@ class TaskController extends Controller
       */
     public function overview($house_id, $no_weeks)
     {
-        if(!app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
+        $houseController = new HouseController();
+        if(!$houseController->userBelongsToHouse($house_id, Auth::id())) {
             return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
 
@@ -148,7 +155,8 @@ class TaskController extends Controller
 
         $assignees = array();
         foreach ($users as $user_id) {
-            $user = app('UserController::class')->getDetails($user_id);
+            $userController = new UserController();
+            $user = $userController->getDetails($user_id);
             array_push($assignees, $user->name);
         }
 
@@ -175,7 +183,8 @@ class TaskController extends Controller
      */
     public function tasks_per_houses($house_id)
     {
-        if(app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
+        $houseController = new HouseController();
+        if($houseController->userBelongsToHouse($house_id, Auth::id())) {
             // Return the different tasks for this house
             $tasks_per_house = DB::table('tasks_per_houses')->where('house_id', $house_id)->get();
 
@@ -217,7 +226,8 @@ class TaskController extends Controller
         // Retrieve house ID this task belongs to
         $house_id = DB::table('tasks')->where('id', $request->input('task_id'))->value('house_id');
 
-        if(!app('HouseController::class')->userBelongsToHouse($house_id, Auth::id())) {
+        $houseController = new HouseController();
+        if(!$houseController->userBelongsToHouse($house_id, Auth::id())) {
             return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
 
