@@ -106,9 +106,9 @@ class TaskController extends Controller
                 if ($task->start_datetime >= $day) {
                     $no_iterations_passed = $day - $task->start_datetime;
 
-                    $assigned_users = DB::table('users_per_task')->where('task_id', $task->id)->get();
+                    $assigned_users = DB::table('users_per_tasks')->where('task_id', $task->id)->get();
                     // Loop through all users assigned to this task
-                    $assignee = $assigned_users[($no_iterations_passed / $task->interval) % sizeof($users_per_task)];
+                    $assignee = $assigned_users[($no_iterations_passed / $task->interval) % sizeof($assigned_users)];
 
                     // Prepare task to add
                     $task_per_day = array();
@@ -148,12 +148,12 @@ class TaskController extends Controller
       */
     public function index($task_id, $no_weeks)
     {
-        $assigned_users = DB::table('users_per_task')->where('task_id', $task_id)->get();
+        $assigned_users = DB::table('users_per_tasks')->where('task_id', $task_id)->get();
         $assignees = array();
-        foreach ($assigned_users as $user_id) {
+        foreach ($assigned_users as $user) {
             $userController = new UserController();
-            $user = $userController->getDetails($user_id);
-            array_push($assignees, $user->name);
+            $db_user = $userController->getDetailsPerUserId($user->user_id);
+            array_push($assignees, $db_user->name);
         }
 
         if (sizeof($assignees) == 0) {
@@ -223,7 +223,6 @@ class TaskController extends Controller
         }
 
         $user_id = DB::table('users')->where('email', $request->input('user_email'))->value('id');
-
         // Retrieve house ID this task belongs to
         $house_id = DB::table('tasks')->where('id', $request->input('task_id'))->value('house_id');
 
