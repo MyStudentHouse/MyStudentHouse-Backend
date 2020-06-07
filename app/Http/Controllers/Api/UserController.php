@@ -8,8 +8,10 @@ namespace App\Http\Controllers\API;
 
 use Auth;
 use App\User;
+use App\Beer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 use Validator;
@@ -117,6 +119,12 @@ class UserController extends Controller
             Log::info("Obtaining details failed");
             return response()->json(['failed' => ''], $this->errorStatus);
         }
+    }
+
+    public function getDetailsPerUserId($user_id)
+    {
+        $user = DB::table('users')->where('id', $user_id)->get();
+        return $user[0];
     }
 
     /**
