@@ -112,9 +112,9 @@ class TaskController extends Controller
                     if (sizeof($assignees) > 0) {
                         $db_task = DB::table('tasks')->where('id', $task->id)->get();
                         // Calculate number of occurrences for the future day we are making the overview for
-                        $occurrence_date = strtotime(date('Y-m-d')) + (24 * 60 * 60 * $i);
-                        $past_occurrences = (($occurrence_date - strtotime($db_task[0]->start_datetime)) / (24 * 60 * 60)) / $db_task[0]->interval;
-                        if ($past_occurrences < -1) {
+                        $occurrence_date = strtotime(date('Y-m-d')) + (24 * 60 * 60 * $i); // Not including the time causes todays occurrence to be showed as well
+                        $past_occurrences = floor((($occurrence_date - strtotime($db_task[0]->start_datetime)) / (24 * 60 * 60)) / $db_task[0]->interval + 1);
+                        if ($past_occurrences < 1) {
                             // There were no past occurrences
                         } else {
                             $task_occurrence = array();
@@ -122,7 +122,6 @@ class TaskController extends Controller
                             $task_occurrence['name'] = $db_task[0]->name;
                             $task_occurrence['date'] = date('Y-m-d', strtotime($db_task[0]->start_datetime) + $seconds_since_start);
                             $task_occurrence['assignee'] = $assignees[$i % sizeof($assignees)];
-                            $task_occurrence['occ'] = $past_occurrences;
                             array_push($tasks_per_day, $task_occurrence);
                         }
                     }
@@ -177,9 +176,9 @@ class TaskController extends Controller
 
         $db_task = DB::table('tasks')->where('id', $task_id)->get();
         // Calculate number of occurrences until today
-        $now = date('Y-m-d H:i:s');
-        $past_occurrences = ((strtotime($now) - strtotime($db_task[0]->start_datetime)) / (24 * 60 * 60)) / $db_task[0]->interval;
-        if ($past_occurrences < 1) {
+        $now = date('Y-m-d'); // Not including the time causes todays occurrence to be showed as well
+        $past_occurrences = floor(((strtotime($now) - strtotime($db_task[0]->start_datetime)) / (24 * 60 * 60)) / $db_task[0]->interval + 1);
+        if ($past_occurrences < 0) {
             $past_occurrences = 0;
         }
 
