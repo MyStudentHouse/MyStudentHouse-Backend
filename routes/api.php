@@ -28,7 +28,7 @@ Route::group(['middleware' => 'auth:api'], function() {
 
     Route::post('tasks', 'Api\TaskController@store')->middleware('cors', 'verified');
     Route::get('tasks/{house_id}/{no_weeks}', 'Api\TaskController@overview')->middleware('cors', 'verified');
-    Route::get('tasks/{house_id}', 'Api\TaskController@task_per_houses')->middleware('cors', 'verified');
+    Route::get('tasks/{house_id}', 'Api\TaskController@tasks_per_houses')->middleware('cors', 'verified');
     Route::get('tasks/task/{task_id}/{no_weeks}', 'Api\TaskController@index')->middleware('cors', 'verified');
     Route::post('tasks/assign', 'Api\TaskController@assign')->middleware('cors', 'verified');
 

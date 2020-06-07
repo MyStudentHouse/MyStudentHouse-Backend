@@ -187,7 +187,7 @@ class TaskController extends Controller
         $houseController = new HouseController();
         if($houseController->userBelongsToHouse($house_id, Auth::id())) {
             // Return the different tasks for this house
-            $tasks_per_house = DB::table('tasks_per_houses')->where('house_id', $house_id)->get();
+            $tasks_per_house = DB::table('tasks')->where('house_id', $house_id)->get();
 
             return response()->json(['success' => $tasks_per_house], $this->successStatus);
         }
