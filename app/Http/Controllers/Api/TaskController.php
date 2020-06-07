@@ -148,22 +148,23 @@ class TaskController extends Controller
       */
     public function index($task_id, $no_weeks)
     {
-        $dbTask = DB::table('tasks')->where('task_id', $task_id)->get();
-
-        // Dynamically allocate user for each interval
-        $users = collect(json_decode($task->users, true));
-
+        $assigned_users = DB::table('users_per_task')->where('task_id', $task_id)->get();
         $assignees = array();
-        foreach ($users as $user_id) {
+        foreach ($assigned_users as $user_id) {
             $userController = new UserController();
             $user = $userController->getDetails($user_id);
             array_push($assignees, $user->name);
         }
 
+        if (sizeof($assignees) == 0) {
+            return response()->json(['error' => 'No one is assigned to this task'], $this->successStatus);    
+        }
+
+        $db_task = DB::table('tasks')->where('id', $task_id)->take(1)->get();
         $tasks = array();
         for($i = 0; $i < $no_weeks; $i++) {
             $task = array();
-            $task['date'] = $dbTask->start_datetime; // Convert to datetime format (with interval_type) using no_weeks
+            $task['date'] = $db_task[0]->start_datetime; // Convert to datetime format (with interval_type) using no_weeks
             $task['assignee'] = $assignees[$i % sizeof($assignees)];
             array_push($tasks, $task);
         }
