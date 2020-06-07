@@ -157,19 +157,51 @@ class TaskController extends Controller
         }
 
         if (sizeof($assignees) == 0) {
-            return response()->json(['error' => 'No one is assigned to this task'], $this->successStatus);    
+            return response()->json(['error' => 'No one is assigned to this task'], $this->successStatus);
         }
 
-        $db_task = DB::table('tasks')->where('id', $task_id)->take(1)->get();
+        $db_task = DB::table('tasks')->where('id', $task_id)->get();
+        // Calculate number of occurrences until today
+        $now = date('Y-m-d H:i:s');
+        $past_occurrences = ((strtotime($now) - strtotime($db_task[0]->start_datetime)) / (24 * 60 * 60)) / $db_task[0]->interval;
+        if ($past_occurrences < 1) {
+            $past_occurrences = 0;
+        }
+
+        // Calculate number of occurrences in the future
+        $future_occurrences = ($no_weeks * 7) / $db_task[0]->interval;
+        $total_occurrences = $past_occurrences + $future_occurrences;
+
+        // Populate array with task per day
         $tasks = array();
-        for($i = 0; $i < $no_weeks; $i++) {
+        for($i = $past_occurrences; $i < $total_occurrences; $i++) {
             $task = array();
-            $task['date'] = $db_task[0]->start_datetime; // Convert to datetime format (with interval_type) using no_weeks
+            $seconds_since_start = $i * $db_task[0]->interval * (24 * 60 * 60);
+            $task['name'] = $db_task[0]->name;
+            $task['date'] = date('Y-m-d', strtotime($db_task[0]->start_datetime) + $seconds_since_start);
             $task['assignee'] = $assignees[$i % sizeof($assignees)];
             array_push($tasks, $task);
         }
 
-        return response()->json(['success' => $tasks], $this->successStatus);
+        // Populate array with task per week
+        $tasks_per_week = array();
+        for($i = 0; $i < sizeof($tasks); $i++) {
+            $week = array();
+            $week['week'] = date('W', strtotime($tasks[$i]['date']));
+            $week['tasks'] = array();
+            while (true) {
+                array_push($week['tasks'], $tasks[$i]);
+                if(($i + 1) == sizeof($tasks) || date('W', strtotime($tasks[$i]['date'])) != date('W', strtotime($tasks[$i + 1]['date']))) {
+                    break;
+                }
+
+                $i++;
+            }
+
+            array_push($tasks_per_week, $week);
+        }
+
+        return response()->json(['success' => $tasks_per_week], $this->successStatus);
     }
 
     /**
