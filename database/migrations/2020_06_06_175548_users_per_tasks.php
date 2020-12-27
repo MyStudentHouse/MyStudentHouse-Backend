@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class UsersPerTask extends Migration
+class UsersPerTasks extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class UsersPerTask extends Migration
      */
     public function up()
     {
-        Schema::create('users_per_task', function (Blueprint $table) {
+        Schema::create('users_per_tasks', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('task_id');
             $table->unsignedInteger('user_id');
@@ -29,6 +29,6 @@ class UsersPerTask extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('users_per_task');
+        Schema::dropIfExists('users_per_tasks');
     }
 }
