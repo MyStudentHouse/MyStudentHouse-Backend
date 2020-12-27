@@ -119,6 +119,7 @@ class HouseController extends Controller
         $house->description = $input['description'];
         /* TODO(PATBRO): implement possibility to upload an image */
         $house->created_by = Auth::id();
+        $house->updated_by = Auth::id();
         $house->save();
 
         /* Add the user who created the house to the house */
@@ -297,5 +298,32 @@ class HouseController extends Controller
         }
 
         return response()->json(['success' => $users_per_houses], $this->successStatus);
+    }
+
+    public function update(Request $reuqest)
+    {
+        $validator = Validator::make($request->all(), [
+            'house_id' => 'required|integer',
+            // TODO(PATBRO): validate all input fields (like name, description and image)
+        ]);
+
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        if($this->userBelongsToHouse($request->input('house_id'), Auth::id()) == false) {
+            return response()->json(['error' => 'You do not belong to this house'], $this->errorStatus);
+        }
+
+        // Fetch house
+        $house = DB::table('houses')->where('id', $request->input('house_id'))->get();
+        // Update house details
+        $house->name = $request->input('name');
+        $house->description = $request->input('description');
+        $house->image = $request->input('image');
+        $house->updated_by = Auth::id();
+        $house->save();
+
+        return response()->json(['success' => $house], $this->successStatus);
     }
 }
