@@ -10,6 +10,7 @@ use Auth;
 use App\Beer;
 use App\House;
 use App\UsersPerHouses;
+use App\UserAdded;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -256,6 +257,19 @@ class HouseController extends Controller
         $beer->created_at = now();
         $beer->updated_at = now();
         $beer->save();
+
+        // Prepare information for email to send to assigned user
+        $user = DB::table('users')->where('email', $request->input('user_email'));
+
+        $house_name = DB::table('houses')->where('house_id', $request->input('house_id'))->value('name');
+        $user_name = DB::table('users')->where('id', Auth::id())->value('name');
+        $userAddedInfo = new UserAdded;
+        $userAddedInfo->name = $user->name;
+        $userAddedInfo->email = $user->email;
+        $userAddedInfo->houseName = $house_name;
+        $userAddedInfo->nameAdded = $user_name;
+
+        Mail::to($user)->send(new UserAddedToHouse($userAddedInfo));
 
         return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
