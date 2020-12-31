@@ -28,8 +28,8 @@ class TaskController extends Controller
       * @param reminder         Boolean which indicates a reminder needs to be sent (0 for false, 1 for true)
       * @param mark_complete    Boolean which indicates if the task need to be marked as complete (0 for false, 1 for true)
       *
-      * @retval JSON     Success 200
-      * @retval JSON     Failed 200
+      * @retval JSON     Success 200: task of the type Task
+      * @retval JSON     Failed 200: error message
       */
     public function store(Request $request)
     {
@@ -64,7 +64,7 @@ class TaskController extends Controller
         $task->mark_complete = $request->input('mark_complete');
         $task->save();
 
-        return response()->json(['success' => $task->id], $this->successStatus);
+        return response()->json(['success' => $task], $this->successStatus);
     }
 
     /**
@@ -74,8 +74,8 @@ class TaskController extends Controller
       * @param house_id     The ID of the user to retrieve the tasks for
       * @param no_weeks     The number of weeks to return tasks for
       *
-      * @retval JSON     Success 200
-      * @retval JSON     Failed 200
+      * @retval JSON     Success 200: tasks per week each of the type Task
+      * @retval JSON     Failed 200: error message
       */
     public function house_overview($house_id, $no_weeks)
     {
@@ -192,8 +192,8 @@ class TaskController extends Controller
       * @param task_id      Task to return
       * @param no_weeks     Number of weeks to run the task for
       *
-      * @retval JSON     Success 200
-      * @retval JSON     Failed 200
+      * @retval JSON     Success 200: tasks per week each of type Task
+      * @retval JSON     Failed 200: error message
       */
     public function index($task_id, $no_weeks)
     {
@@ -259,8 +259,8 @@ class TaskController extends Controller
      *
      * @param house_id  Which house to index the tasks for
      *
-     * @retval JSON     Success 200
-     * @retval JSON     Failed 200
+     * @retval JSON     Success 200: tasks per house each of the type Task
+     * @retval JSON     Failed 200: error message
      *
      */
     public function tasks_per_houses($house_id)
@@ -274,6 +274,22 @@ class TaskController extends Controller
         }
 
         return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+    }
+
+    /**
+     * @par API\TaskController@tasks_per_user (GET)
+     * Gets all the tasks belonging to the user
+     *
+     * @param house_id  Which user to index the tasks for
+     *
+     * @retval JSON     Success 200: tasks per user each of the type Task
+     *
+     */
+    public function tasks_per_user($user_id)
+    {
+        $tasks_per_user = DB::table('tasks')->where('user_id', $user_id)->get();
+        
+        return response()->json(['success' => $tasks_per_house], $this->successStatus);
     }
 
     /**
@@ -318,19 +334,79 @@ class TaskController extends Controller
         $users_per_task->user_id = $user_id;
         $users_per_task->save();
 
+        // TODO(PATBRO): retrieve all tasks user is assigned to and return that
         return response()->json(['success' => $users_per_task], $this->successStatus);
     }
 
-    // Request to edit an existing task, return needed data for front-end
-    public function edit(Request $request)
+    /**
+     * @par API\TaskController@edit (GET)
+     * Request information of a task, before it can be edited, data necessary data for front-end
+     * 
+     * @param task_id       ID of the task to retrieve
+     * 
+     * @retval JSON     Success 200: the requested task of the type Task
+     * @retval JSON     Failed 200: error message
+     */
+    public function edit($task_id)
     {
+        // 1. Check which house the task belongs to
+        $task = DB::table('tasks')->where('task_id', $task_id)->get();
 
+        // 2. Check whether user belongs to house
+        $houseController = new HouseController();
+        if(!$houseController->userBelongsToHouse($house_id, Auth::id())) {
+            return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+        }
+
+        // 3. Return the task
+        return response()->json(['success' => $task], $this->successStatus);
     }
 
-    // Update an existing task
+    /**
+     * @par API\TaskController@update (GET)
+     * Update an existing task
+     * 
+     * @param task_id          ID of the task to update
+     * @param description      Describes the task in a few concise words
+     * @param interval         After how many days the task shall repeat itself (uint)
+     * @param start_datetime   At which datetime the task shall start (Y/m/d H:i:s)
+     * @param reminder         Boolean which indicates a reminder needs to be sent (0 for false, 1 for true)
+     * @param mark_complete    Boolean which indicates if the task need to be marked as complete (0 for false, 1 for true)
+    *
+     * @retval JSON     Success 200: returns the updated task of the type Task
+     * @retval JSON     Failed 200: error message
+     */
     public function update(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'task_id' => 'required|integer',
+            'name' => 'required|string',
+            'description' => 'required|string',
+            'interval' => 'required|integer',
+            'start_datetime' => 'required|date',
+            'reminder' => 'required|boolean',
+            'mark_complete' => 'required|boolean',
+        ]);
 
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        $houseController = new HouseController();
+        if(!$houseController->userBelongsToHouse($request->input('house_id'), Auth::id())) {
+            return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+        }
+
+        $task = DB::table('tasks')->where('task_id', $request->input('task_id'))->get();
+        $task['name'] = $request->input('name');
+        $task['description'] = $request->input('description');
+        $task['interval'] = $request->input('interval');
+        $task['start_datetime'] = $request->input('start_datetime');
+        $task['reminder'] = $request->input('reminder');
+        $task['mark_complete'] = $request->input('mark_complete');
+        $task->save(); // TODO(PATBRO): possibly not functional
+
+        return response()->json(['success' => $task], $this->successStatus);
     }
 
     // Delete a task
