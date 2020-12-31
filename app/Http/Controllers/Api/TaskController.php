@@ -68,16 +68,16 @@ class TaskController extends Controller
     }
 
     /**
-      * @par API\TaskController@overview (GET)
-      * Retrieve the tasks for a certain house for a certain number of upcoming weeks
+      * @par API\TaskController@house_overview (GET)
+      * Retrieve the tasks for a certain user for a certain number of upcoming weeks
       *
-      * @param house_id     The ID of the house to retrieve the tasks for
+      * @param house_id     The ID of the user to retrieve the tasks for
       * @param no_weeks     The number of weeks to return tasks for
       *
       * @retval JSON     Success 200
       * @retval JSON     Failed 200
       */
-    public function overview($house_id, $no_weeks)
+    public function house_overview($house_id, $no_weeks)
     {
         $houseController = new HouseController();
         if(!$houseController->userBelongsToHouse($house_id, Auth::id())) {
@@ -87,6 +87,38 @@ class TaskController extends Controller
         // Return the different tasks for this house
         $tasks = DB::table('tasks')->where('house_id', $house_id)->get();
 
+        $tasks_per_week = tasks_per_week($tasks);
+
+        return response()->json(['success' => $tasks_per_week], $this->successStatus);
+    }
+
+    /**
+      * @par API\TaskController@user_overview (GET)
+      * Retrieve the tasks for a certain house for a certain number of upcoming weeks
+      *
+      * @param house_id     The ID of the house to retrieve the tasks for
+      * @param no_weeks     The number of weeks to return tasks for
+      *
+      * @retval JSON     Success 200
+      * @retval JSON     Failed 200
+      */
+      public function user_overview($user_id, $no_weeks)
+      {
+          $houseController = new HouseController();
+          if(!$houseController->userBelongsToHouse($house_id, Auth::id())) {
+              return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
+          }
+  
+          // Return the different tasks for the requested user
+          $tasks = DB::table('tasks')->where('user_id', $user_id)->get();
+  
+          $tasks_per_week = tasks_per_week($tasks);
+  
+          return response()->json(['success' => $tasks_per_week], $this->successStatus);
+      }
+
+    private function tasks_per_week($tasks)
+    {
         // Determine earliest start datetime of all tasks assigned to this house
         $start_datetime = date('Y-m-d');
         foreach($tasks as $task) {
@@ -95,6 +127,29 @@ class TaskController extends Controller
             }
         }
 
+        $tasks_per_day = tasks_per_day($tasks);
+
+        // Populate array with task per week
+        $tasks_per_week = array();
+        for($i = 0; $i < sizeof($tasks_per_day); $i++) {
+            $week = array();
+            $week['week'] = date('W', strtotime($tasks_per_day[$i]['date']));
+            $week['tasks'] = array();
+            while (true) {
+                array_push($week['tasks'], $tasks_per_day[$i]);
+                if(($i + 1) == sizeof($tasks_per_day) || date('W', strtotime($tasks_per_day[$i]['date'])) != date('W', strtotime($tasks_per_day[$i + 1]['date']))) {
+                    break;
+                }
+
+                $i++;
+            }
+
+            array_push($tasks_per_week, $week);
+        }
+    }
+
+    private function tasks_per_day($tasks)
+    {
         $days = $no_weeks * 7;
         $tasks_per_day = array();
         for ($i = 0; $i < $days; $i++) {
@@ -128,26 +183,6 @@ class TaskController extends Controller
                 }
             }
         }
-
-        // Populate array with task per week
-        $tasks_per_week = array();
-        for($i = 0; $i < sizeof($tasks_per_day); $i++) {
-            $week = array();
-            $week['week'] = date('W', strtotime($tasks_per_day[$i]['date']));
-            $week['tasks'] = array();
-            while (true) {
-                array_push($week['tasks'], $tasks_per_day[$i]);
-                if(($i + 1) == sizeof($tasks_per_day) || date('W', strtotime($tasks_per_day[$i]['date'])) != date('W', strtotime($tasks_per_day[$i + 1]['date']))) {
-                    break;
-                }
-
-                $i++;
-            }
-
-            array_push($tasks_per_week, $week);
-        }
-
-        return response()->json(['success' => $tasks_per_week], $this->successStatus);
     }
 
      /**
