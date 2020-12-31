@@ -27,10 +27,14 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::post('beer', 'Api\BeerController@store')->middleware('cors', 'verified');
 
     Route::post('tasks', 'Api\TaskController@store')->middleware('cors', 'verified');
-    Route::get('tasks/{house_id}/{no_weeks}', 'Api\TaskController@overview')->middleware('cors', 'verified');
-    Route::get('tasks/{house_id}', 'Api\TaskController@tasks_per_houses')->middleware('cors', 'verified');
-    Route::get('tasks/task/{task_id}/{no_weeks}', 'Api\TaskController@index')->middleware('cors', 'verified');
+    Route::get('tasks/user/{user_id}/{no_weeks}', 'Api\TaskController@user_overview')->middleware('cors', 'verified');
+    Route::get('tasks/user/{user_id}', 'Api\TaskController@tasks_per_user')->middleware('cors', 'verified');
+    Route::get('tasks/house/{house_id}/{no_weeks}', 'Api\TaskController@house_overview')->middleware('cors', 'verified');
+    Route::get('tasks/house/{house_id}', 'Api\TaskController@tasks_per_houses')->middleware('cors', 'verified');
+    Route::get('tasks/index/{task_id}/{no_weeks}', 'Api\TaskController@index')->middleware('cors', 'verified');
     Route::post('tasks/assign', 'Api\TaskController@assign')->middleware('cors', 'verified');
+    Route::get('tasks/edit/{task_id}', 'Api\TaskController@edit')->middleware('cors', 'verified');
+    Route::post('tasks/update/{task_id}', 'Api\TaskController@update')->middleware('cors', 'verified');
 
     Route::post('container', 'Api\ContainerController@show')->middleware('cors');
     Route::post('container/update', 'Api\ContainerController@updateContainerTurns')->middleware('cors', 'verified');
