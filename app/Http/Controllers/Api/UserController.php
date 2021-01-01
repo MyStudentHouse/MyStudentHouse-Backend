@@ -158,6 +158,7 @@ class UserController extends Controller
         }
 
         $user = Auth::user();
+        $original_user = $user;
         if ($request->has('avatar')) {
             $user->image = Storage::putFile('avatars', $request->file('avatar'));
         }
@@ -172,7 +173,13 @@ class UserController extends Controller
         }
         $user->save();
 
-        // TODO(PATBRO): send email to verify email address
+        // Send verification notification to new email address if the email address was updated
+        /* TODO(PATBRO): if new email address is entered incorrectly, the email address cannot be 
+         * changed back if this route requires a verified email address. Exclude from verfied route?
+         */
+        if ($request->has('email') && ($original_user->email != $user->email)) {
+            $user->sendEmailVerificationNotification();
+        }
 
         Log::info("Details for user ID ". $user->id ." were updated successfully");
         return response()->json(['success' => $user], $this->successStatus);
