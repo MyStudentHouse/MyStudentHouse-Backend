@@ -11,7 +11,7 @@ use App\Notifications\VerifyEmailNotification;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use Notifiable, HasApiTokens;
+    use Notifiable, HasApiTokens, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
