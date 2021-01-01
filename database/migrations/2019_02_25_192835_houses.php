@@ -19,6 +19,7 @@ class Houses extends Migration
             $table->text('description');
             $table->string('image', 100)->default('/img/placeholders/house_placeholder.jpg');
             $table->unsignedInteger('created_by'); /* User ID which created the student house */
+            $table->unsignedInteger('updated_by'); /* User ID which made changes the student house */
             $table->timestamps();
         });
     }
