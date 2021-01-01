@@ -288,7 +288,7 @@ class TaskController extends Controller
     public function tasks_per_user($user_id)
     {
         $tasks_per_user = DB::table('tasks')->where('user_id', $user_id)->get();
-        
+
         return response()->json(['success' => $tasks_per_house], $this->successStatus);
     }
 
@@ -363,7 +363,7 @@ class TaskController extends Controller
     }
 
     /**
-     * @par API\TaskController@update (GET)
+     * @par API\TaskController@update (POST)
      * Update an existing task
      * 
      * @param task_id          ID of the task to update
@@ -398,20 +398,41 @@ class TaskController extends Controller
         }
 
         $task = DB::table('tasks')->where('task_id', $request->input('task_id'))->get();
-        $task['name'] = $request->input('name');
-        $task['description'] = $request->input('description');
-        $task['interval'] = $request->input('interval');
-        $task['start_datetime'] = $request->input('start_datetime');
-        $task['reminder'] = $request->input('reminder');
-        $task['mark_complete'] = $request->input('mark_complete');
-        $task->save(); // TODO(PATBRO): possibly not functional
+        $task->name = $request->input('name');
+        $task->description = $request->input('description');
+        $task->interval = $request->input('interval');
+        $task->start_datetime = $request->input('start_datetime');
+        $task->reminder = $request->input('reminder');
+        $task->mark_complete = $request->input('mark_complete');
+        $task->save();
 
         return response()->json(['success' => $task], $this->successStatus);
     }
 
-    // Delete a task
+    /**
+     * @par API\TaskController@destroy (POST)
+     * Delete a task
+     * 
+     * @param task_id          ID of the task to delete
+    *
+     * @retval JSON     Success 200: returns the deleted task of the type Task
+     * @retval JSON     Failed 200: error message
+     */
     public function destroy(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'task_id' => 'required|integer',
+        ]);
 
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        $destroyed_task = Task::destroy($request->task_id);
+        if($destroyed_task) {
+            return response()->json(['success' => $destroyed_task], $this->successStatus);
+        } else {
+            return response()->json(['error' => $destroyed_task], $this->errorStatus);
+        }
     }
 }
