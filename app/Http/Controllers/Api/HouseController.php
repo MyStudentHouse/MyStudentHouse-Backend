@@ -105,20 +105,26 @@ class HouseController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->hasFile('avatar') && !$request->file('avatar')->isValid()) {
+            return response()->json(['error' => 'Uploaded avatar not valid'], $this->errorStatus);   
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'description' => 'required',
+            'avatar' => 'sometimes|mimes:jpeg,png|max:1024', // Only validate when posted
         ]);
 
         if($validator->fails() == true) {
             return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
-        $input = $request->all();
         $house = new House;
-        $house->name = $input['name'];
-        $house->description = $input['description'];
-        /* TODO(PATBRO): implement possibility to upload an image */
+        $house->name = $request->input('name');
+        $house->description = $request->input('description');
+        if ($request->has('avatar')) {
+            $house->image = Storage::putFile('avatars', $request->file('avatar'));
+        }
         $house->created_by = Auth::id();
         $house->updated_by = Auth::id();
         $house->save();
@@ -215,7 +221,6 @@ class HouseController extends Controller
             return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->errorStatus);
         }
 
-        /* TODO(PATBRO): replace this implementation because this is considered not secure */
         if(DB::table('users')->where('email', $request->input('user_email'))->exists() == false) {
             /* Check if user with this email address exists */
             return response()->json(['error' => 'User not found'], $this->errorStatus);
@@ -307,7 +312,6 @@ class HouseController extends Controller
             /* TODO(PATBRO): first check whether beer and WBW balance is even */
             $users_per_houses = DB::table('users_per_houses')->where('user_id', $request->input('user_id'))->where('house_id', $request->input('house_id'))->update(['deleted' => true]);
         } else {
-            /* TODO(PATBRO): make error less descriptive due to security reasons, otherwise this could be brute forced */
             return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
 
