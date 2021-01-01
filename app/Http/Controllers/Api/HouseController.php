@@ -314,14 +314,32 @@ class HouseController extends Controller
         return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
 
-    public function update(Request $reuqest)
+    /**
+     * @par API\HouseController@update (POST)
+     * Update the details of a house
+     *
+     * @param house_id      House ID to update the details for (required)
+     * @param name          Name of the house (optional)
+     * @param description   Description of the house (optional)
+     * @param avatar        Avatar of the house (not required to be posted)
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function update(Request $request)
     {
+        if ($request->hasFile('avatar') && !$request->file('avatar')->isValid()) {
+            return response()->json(['error' => 'Uploaded avatar not valid'], $this->errorStatus);   
+        }
+
         $validator = Validator::make($request->all(), [
-            'house_id' => 'required|integer',
-            // TODO(PATBRO): validate all input fields (like name, description and image)
+            'house_id' => 'required|integer|unique:houses,id',
+            'name' => 'max:56',
+            'description' => 'max:280',
+            'avatar' => 'sometimes|mimes:jpeg,png|max:1024', // Only validate when posted
         ]);
 
-        if($validator->fails() == true) {
+        if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
@@ -334,7 +352,9 @@ class HouseController extends Controller
         // Update house details
         $house->name = $request->input('name');
         $house->description = $request->input('description');
-        $house->image = $request->input('image');
+        if ($request->has('avatar')) {
+            $house->image = Storage::putFile('avatars', $request->file('avatar'));
+        }
         $house->updated_by = Auth::id();
         $house->save();
 
