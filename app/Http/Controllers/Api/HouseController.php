@@ -12,8 +12,10 @@ use App\House;
 use App\UsersPerHouses;
 use App\UserAdded;
 use App\Http\Controllers\Controller;
+use App\Mail\UserAddedToHouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Mail;
 use Validator;
 
 class HouseController extends Controller
@@ -264,13 +266,13 @@ class HouseController extends Controller
         $beer->save();
 
         // Prepare information for email to send to assigned user
-        $user = DB::table('users')->where('email', $request->input('user_email'));
+        $user = DB::table('users')->where('email', $request->input('user_email'))->get();
 
-        $house_name = DB::table('houses')->where('house_id', $request->input('house_id'))->value('name');
+        $house_name = DB::table('houses')->where('id', $request->input('house_id'))->value('name');
         $user_name = DB::table('users')->where('id', Auth::id())->value('name');
         $userAddedInfo = new UserAdded;
-        $userAddedInfo->name = $user->name;
-        $userAddedInfo->email = $user->email;
+        $userAddedInfo->name = $user[0]->name;
+        $userAddedInfo->email = $user[0]->email;
         $userAddedInfo->houseName = $house_name;
         $userAddedInfo->nameAdded = $user_name;
 
