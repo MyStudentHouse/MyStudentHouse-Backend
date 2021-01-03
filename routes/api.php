@@ -44,10 +44,6 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::post('task/user/assign', 'Api\TaskController@assignUser')->middleware('cors', 'verified');
     Route::post('task/user/remove', 'Api\TaskController@removeUser')->middleware('cors', 'verified');
 
-    // ContainerController
-    Route::post('container', 'Api\ContainerController@show')->middleware('cors');
-    Route::post('container/update', 'Api\ContainerController@updateContainerTurns')->middleware('cors', 'verified');
-
     // HouseController
     Route::get('house', 'Api\HouseController@index')->middleware('cors');
     Route::get('house/user', 'Api\HouseController@userBelongsTo')->middleware('cors');
