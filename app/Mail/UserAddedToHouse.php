@@ -30,7 +30,7 @@ class UserAddedToHouse extends Mailable
     public function build()
     {
         return $this->from('hello@mystudent.house')
-                ->view('emails.house.useradded')
+                ->view('emails.useraddedtohouse')
                 ->with([
                     'name' => $this->userAdded->name,
                     'email' => $this->userAdded->email,
