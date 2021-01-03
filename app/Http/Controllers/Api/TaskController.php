@@ -151,10 +151,11 @@ class TaskController extends Controller
     public function indexTask($task_id)
     {
         // 1. Check which house the task belongs to
-        $task = DB::table('tasks')->where('task_id', $task_id)->get();
-
+        $task = DB::table('tasks')->where('id', $task_id)->get();
+        
         // 2. Check whether user belongs to house
         $houseController = new HouseController();
+        $house_id = DB::table('tasks')->where('id', $task_id)->value('house_id'); // TODO(PATBRO): check why `$task->house_id` does not work
         if(!$houseController->userBelongsToHouse($house_id, Auth::id())) {
             return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
@@ -197,9 +198,9 @@ class TaskController extends Controller
      */
     public function indexUser($user_id)
     {
-        $tasks_per_user = DB::table('tasks')->where('user_id', $user_id)->get();
+        $tasks_per_user = DB::table('users_per_tasks')->where('user_id', $user_id)->get();
 
-        return response()->json(['success' => $tasks_per_house], $this->successStatus);
+        return response()->json(['success' => $tasks_per_user], $this->successStatus);
     }
 
      /**
@@ -290,7 +291,7 @@ class TaskController extends Controller
         // Return the different tasks for this house
         $tasks = DB::table('tasks')->where('house_id', $house_id)->get();
 
-        $tasks_per_week = tasks_per_week($tasks);
+        $tasks_per_week = $this->tasksPerWeek($tasks, $no_weeks);
 
         return response()->json(['success' => $tasks_per_week], $this->successStatus);
     }
@@ -305,22 +306,33 @@ class TaskController extends Controller
       * @retval JSON     Success 200
       * @retval JSON     Failed 200
       */
-      public function indexUserPerWeek($user_id, $no_weeks)
-      {
-          $houseController = new HouseController();
-          if(!$houseController->userBelongsToHouse($house_id, Auth::id())) {
-              return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
-          }
-  
-          // Return the different tasks for the requested user
-          $tasks = DB::table('tasks')->where('user_id', $user_id)->get();
-  
-          $tasks_per_week = tasksPerWeek($tasks);
-  
-          return response()->json(['success' => $tasks_per_week], $this->successStatus);
-      }
+    public function indexUserPerWeek($user_id, $no_weeks)
+    {
+        // 1. Get all tasks the user belongs to
+        $user_per_tasks = DB::table('users_per_tasks')->where('user_id', $user_id)->get();
 
-    private function tasksPerWeek($tasks)
+        // 2. Determine which house(s) the user - performing the request - belongs to
+        $user_belongs_to = DB::table('users_per_houses')->where('user_id', Auth::id())->where('deleted', false)->get();
+
+        // 3. Retrieve per task, which house the task belongs to
+        $tasks = array();
+        foreach ($user_per_tasks as $user_per_task) {
+            $house_id = DB::table('tasks')->where('id', $user_per_task->task_id)->value('house_id');
+            // 4. If user - performing the request - belongs to the same house, then the task may be returned
+            foreach ($user_belongs_to as $house) {
+                if ($house->house_id == $house_id) {
+                    $task = DB::table('tasks')->where('id', $user_per_task->id)->get();
+                    array_push($tasks, $task[0]);
+                }
+            }
+        }
+
+        $tasks_per_week = $this->tasksPerWeek($tasks, $no_weeks);
+
+        return response()->json(['success' => $tasks_per_week], $this->successStatus);
+    }
+
+    private function tasksPerWeek($tasks, $no_weeks)
     {
         // Determine earliest start datetime of all tasks assigned to this house
         $start_datetime = date('Y-m-d');
@@ -330,7 +342,7 @@ class TaskController extends Controller
             }
         }
 
-        $tasks_per_day = tasksPerDay($tasks);
+        $tasks_per_day = $this->tasksPerDay($tasks, $no_weeks);
 
         // Populate array with task per week
         $tasks_per_week = array();
@@ -349,9 +361,11 @@ class TaskController extends Controller
 
             array_push($tasks_per_week, $week);
         }
+
+        return $tasks_per_week;
     }
 
-    private function tasksPerDay($tasks)
+    private function tasksPerDay($tasks, $no_weeks)
     {
         $days = $no_weeks * 7;
         $tasks_per_day = array();
@@ -386,6 +400,8 @@ class TaskController extends Controller
                 }
             }
         }
+
+        return $tasks_per_day;
     }
 
     /**
@@ -409,9 +425,9 @@ class TaskController extends Controller
             return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
-        $user_id = findUserIdBasedOnEmail($request->input('user_email'));
+        $user_id = $this->findUserIdBasedOnEmail($request->input('user_email'));
         // Verify user is authorized to delete user from task
-        CheckUserBelongsToHouseBasedOnTaskId($request->input('task_id'));
+        $this->CheckUserBelongsToHouseBasedOnTaskId($request->input('task_id'));
 
         // Assign user to this task
         $users_per_task = new UsersPerTask();
@@ -444,9 +460,9 @@ class TaskController extends Controller
             return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
-        $user_id = findUserIdBasedOnEmail($request->input('user_email'));
+        $user_id = $this->findUserIdBasedOnEmail($request->input('user_email'));
         // Verify user is authorized to delete user from task
-        CheckUserBelongsToHouseBasedOnTaskId($request->input('task_id'));
+        $this->CheckUserBelongsToHouseBasedOnTaskId($request->input('task_id'));
 
         // Check whether user actually belongs to the task ID
         try {
