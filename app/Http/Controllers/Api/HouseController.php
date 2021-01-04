@@ -340,7 +340,7 @@ class HouseController extends Controller
 
         $validator = Validator::make($request->all(), [
             'house_id' => 'required|integer|unique:houses,id',
-            'name' => 'max:56',
+            'name' => 'sometimes|min:4|max:56',
             'description' => 'max:280',
             'avatar' => 'sometimes|mimes:jpeg,png|max:1024', // Only validate when posted
         ]);
