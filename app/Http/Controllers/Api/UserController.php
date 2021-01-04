@@ -131,21 +131,55 @@ class UserController extends Controller
      * @par API\UserController@updateDetails (POST)
      * Update the details of the current user.
      *
-     * @param image     Path to the profile image of the user
-     * @param email     Email address of the user
-     * @param phone     Phone number of the user
-     * @param iban      IBAN of the user
+     * @param avatar    Profile image of the user (not required to be posted)
+     * @param email     Email address of the user (not required to be posted)
+     * @param phone     Phone number of the user (not required to be posted)
+     * @param iban      IBAN of the user (not required to be posted)
      *
-     * @retval JSON     Success
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
      */
     public function updateDetails(Request $request)
     {
+        if ($request->hasFile('avatar') && !$request->file('avatar')->isValid()) {
+            return response()->json(['error' => 'Uploaded avatar not valid'], $this->errorStatus);   
+        }
+
+        $validator = Validator::make($request->all(), [
+            // Only validate when posted
+            'avatar' => 'sometimes|mimes:jpeg,png|max:1024',
+            'email' => 'sometimes|email|unique:users,email',
+            'phone' => 'sometimes|digits:10',
+            'iban' => 'sometimes|size:18',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
         $user = Auth::user();
-        $user->image = $request->input('image');
-        $user->email = $request->input('email');
-        $user->phone = $request->input('phone'); /* TODO(PATBRO): write a validation rule to validate phone numbers */
-        $user->iban = $request->input('iban'); /* TODO(PATBRO): write a validation rule to validate an IBAN */
+        $original_user = $user;
+        if ($request->has('avatar')) {
+            $user->image = Storage::putFile('avatars', $request->file('avatar'));
+        }
+        if ($request->has('email')) {
+            $user->email = $request->input('email');
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->input('phone');
+        }
+        if ($request->has('iban')) {
+            $user->iban = $request->input('iban');
+        }
         $user->save();
+
+        // Send verification notification to new email address if the email address was updated
+        /* TODO(PATBRO): if new email address is entered incorrectly, the email address cannot be 
+         * changed back if this route requires a verified email address. Exclude from verfied route?
+         */
+        if ($request->has('email') && ($original_user->email != $user->email)) {
+            $user->sendEmailVerificationNotification();
+        }
 
         Log::info("Details for user ID ". $user->id ." were updated successfully");
         return response()->json(['success' => $user], $this->successStatus);

@@ -10,9 +10,12 @@ use Auth;
 use App\Beer;
 use App\House;
 use App\UsersPerHouses;
+use App\UserAdded;
 use App\Http\Controllers\Controller;
+use App\Mail\UserAddedToHouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Mail;
 use Validator;
 
 class HouseController extends Controller
@@ -104,21 +107,28 @@ class HouseController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->hasFile('avatar') && !$request->file('avatar')->isValid()) {
+            return response()->json(['error' => 'Uploaded avatar not valid'], $this->errorStatus);   
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'description' => 'required',
+            'avatar' => 'sometimes|mimes:jpeg,png|max:1024', // Only validate when posted
         ]);
 
         if($validator->fails() == true) {
             return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
-        $input = $request->all();
         $house = new House;
-        $house->name = $input['name'];
-        $house->description = $input['description'];
-        /* TODO(PATBRO): implement possibility to upload an image */
+        $house->name = $request->input('name');
+        $house->description = $request->input('description');
+        if ($request->has('avatar')) {
+            $house->image = Storage::putFile('avatars', $request->file('avatar'));
+        }
         $house->created_by = Auth::id();
+        $house->updated_by = Auth::id();
         $house->save();
 
         /* Add the user who created the house to the house */
@@ -213,7 +223,6 @@ class HouseController extends Controller
             return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->errorStatus);
         }
 
-        /* TODO(PATBRO): replace this implementation because this is considered not secure */
         if(DB::table('users')->where('email', $request->input('user_email'))->exists() == false) {
             /* Check if user with this email address exists */
             return response()->json(['error' => 'User not found'], $this->errorStatus);
@@ -256,6 +265,19 @@ class HouseController extends Controller
         $beer->updated_at = now();
         $beer->save();
 
+        // Prepare information for email to send to assigned user
+        $user = DB::table('users')->where('email', $request->input('user_email'))->get();
+
+        $house_name = DB::table('houses')->where('id', $request->input('house_id'))->value('name');
+        $user_name = DB::table('users')->where('id', Auth::id())->value('name');
+        $userAddedInfo = new UserAdded;
+        $userAddedInfo->name = $user[0]->name;
+        $userAddedInfo->email = $user[0]->email;
+        $userAddedInfo->houseName = $house_name;
+        $userAddedInfo->nameAdded = $user_name;
+
+        Mail::to($user)->send(new UserAddedToHouse($userAddedInfo));
+
         return response()->json(['success' => $users_per_houses], $this->successStatus);
     }
 
@@ -292,10 +314,56 @@ class HouseController extends Controller
             /* TODO(PATBRO): first check whether beer and WBW balance is even */
             $users_per_houses = DB::table('users_per_houses')->where('user_id', $request->input('user_id'))->where('house_id', $request->input('house_id'))->update(['deleted' => true]);
         } else {
-            /* TODO(PATBRO): make error less descriptive due to security reasons, otherwise this could be brute forced */
             return response()->json(['error' => 'User does not belong to this house'], $this->errorStatus);
         }
 
         return response()->json(['success' => $users_per_houses], $this->successStatus);
+    }
+
+    /**
+     * @par API\HouseController@update (POST)
+     * Update the details of a house
+     *
+     * @param house_id      House ID to update the details for (required)
+     * @param name          Name of the house (optional)
+     * @param description   Description of the house (optional)
+     * @param avatar        Avatar of the house (not required to be posted)
+     *
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function update(Request $request)
+    {
+        if ($request->hasFile('avatar') && !$request->file('avatar')->isValid()) {
+            return response()->json(['error' => 'Uploaded avatar not valid'], $this->errorStatus);   
+        }
+
+        $validator = Validator::make($request->all(), [
+            'house_id' => 'required|integer|unique:houses,id',
+            'name' => 'sometimes|min:4|max:56',
+            'description' => 'max:280',
+            'avatar' => 'sometimes|mimes:jpeg,png|max:1024', // Only validate when posted
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        if($this->userBelongsToHouse($request->input('house_id'), Auth::id()) == false) {
+            return response()->json(['error' => 'You do not belong to this house'], $this->errorStatus);
+        }
+
+        // Fetch house
+        $house = DB::table('houses')->where('id', $request->input('house_id'))->get();
+        // Update house details
+        $house->name = $request->input('name');
+        $house->description = $request->input('description');
+        if ($request->has('avatar')) {
+            $house->image = Storage::putFile('avatars', $request->file('avatar'));
+        }
+        $house->updated_by = Auth::id();
+        $house->save();
+
+        return response()->json(['success' => $house], $this->successStatus);
     }
 }
