@@ -438,7 +438,7 @@ class TaskController extends Controller
         $users_per_task->user_id = $user_id;
         $users_per_task->save();
 
-        // TODO(PATBRO): retrieve all tasks user is assigned to and return that
+        // TODO(PATBRO): https://github.com/MyStudentHouse/MyStudentHouse-Backend/projects/2#card-52042123
         return response()->json(['success' => $users_per_task], $this->successStatus);
     }
 
