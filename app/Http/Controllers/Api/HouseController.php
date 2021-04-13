@@ -198,6 +198,55 @@ class HouseController extends Controller
         return response()->json(['success' => $houses], $this->successStatus);
     }
 
+    private function AddUserVerification(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'house_id' => 'required|integer',
+            'user_email' => 'required|email',
+            'role' => 'required|integer|between:1,9', /* Role must be between 1 and 9 */
+        ]);
+
+        if($validator->fails() == true) {
+            return response()->json(['error' => $validator->errors()], $this->errorStatus);
+        }
+
+        /* Verify if user is authorised to add other users to a student house */
+        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $request->input('house_id'))->exists() == false) {
+            return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->errorStatus);
+        }
+        
+        return true;
+    }
+
+    /**
+     * @par API\HouseController@inviteNonUser (POST)
+     * Invite a non-user to join an already existing house.
+     * 
+     * @param house_id          House ID to add the non-user to (required).
+     * @param non_user_email    Email address of the non-user to invite (required). Based on user input.
+     * @param role              Role of the non-user to add (required, between 1 and 9).
+     * 
+     * @retval JSON     Error 412
+     * @retval JSON     Success 200
+     */
+    public function inviteNonUser(Request $request)
+    {
+        $result = $this->AddUserVerification($request);
+        if ($result != true) {
+            return $result;
+        }
+
+        $user_name = DB::table('users')->where('id', Auth::id())->value('name');
+        $nonUserAddedInfo = new UserAdded;
+        $nonUserAddedInfo->email = $user[0]->email;
+        $nonUserAddedInfo->houseName = $house_name;
+        $userAddedInfo->nameAdded = $user_name;
+
+        Mail::to($user)->send(new InviteNonUserToHouse($nonUserAddedInfo));
+
+        return response()->json(['success' => 'The invite was successfully sent!'], $this->successStatus);
+    }
+
     /**
      * @par API\HouseController@assignUser (POST)
      * Assign a user to an already existing house.
@@ -211,19 +260,9 @@ class HouseController extends Controller
      */
     public function assignUser(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'house_id' => 'required|integer',
-            'user_email' => 'required|email',
-            'role' => 'required|integer|between:1,9', /* Role must be between 1 and 3 */
-        ]);
-
-        if($validator->fails() == true) {
-            return response()->json(['error' => $validator->errors()], $this->errorStatus);
-        }
-
-        /* Verify if user is authorised to add other users to a student house */
-        if(DB::table('users_per_houses')->where('user_id', Auth::id())->where('house_id', $request->input('house_id'))->exists() == false) {
-            return response()->json(['error' => 'You are not permitted to add a user to this house'], $this->errorStatus);
+        $result = $this->AddUserVerification($request);
+        if ($result != true) {
+            return $result;
         }
 
         if(DB::table('users')->where('email', $request->input('user_email'))->exists() == false) {
