@@ -13,6 +13,7 @@ use App\UsersPerHouses;
 use App\UserAdded;
 use App\Http\Controllers\Controller;
 use App\Mail\UserAddedToHouse;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Mail;
@@ -20,6 +21,8 @@ use Validator;
 
 class HouseController extends Controller
 {
+    use SoftDeletes;
+
     public $successStatus = 200;
     public $errorStatus = 400;
     public $unauthorisedStatus = 401;

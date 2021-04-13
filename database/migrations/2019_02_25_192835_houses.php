@@ -21,6 +21,7 @@ class Houses extends Migration
             $table->unsignedInteger('created_by'); /* User ID which created the student house */
             $table->unsignedInteger('updated_by'); /* User ID which made changes the student house */
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

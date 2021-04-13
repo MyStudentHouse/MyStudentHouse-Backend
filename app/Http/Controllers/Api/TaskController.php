@@ -6,12 +6,15 @@ use Auth;
 use App\Task;
 use App\UsersPerTask;
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Validator;
 
 class TaskController extends Controller
 {
+    use SoftDeletes;
+
     public $successStatus = 200;
     public $errorStatus = 400;
     public $unauthorisedStatus = 401;
@@ -131,8 +134,8 @@ class TaskController extends Controller
             return response()->json(['error' => $validator->errors()], $this->errorStatus);
         }
 
-        $destroyed_task = Task::destroy($request->task_id);
-        if($destroyed_task) {
+        $task = Task::find($request->task_id);
+        if($task->softDeletes()) {
             return response()->json(['success' => $destroyed_task], $this->successStatus);
         } else {
             return response()->json(['error' => $destroyed_task], $this->errorStatus);

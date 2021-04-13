@@ -23,6 +23,7 @@ class CreateTasksTable extends Migration
             $table->boolean('reminder');
             $table->boolean('mark_complete');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
