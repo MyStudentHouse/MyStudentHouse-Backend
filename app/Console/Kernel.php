@@ -24,8 +24,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // TODO(PATBRO): change to ->dailyAt('06:00')->timezone('Europe/Amsterdam');
-        $schedule->command('task:notification')->everyMinute()->emailOutputOnFailure('patrick@mystudent.house');
+        // $schedule->command('inspire')->hourly();
     }
 
     /**
