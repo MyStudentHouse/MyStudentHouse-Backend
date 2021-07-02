@@ -14,7 +14,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Routes without authentication
+// UserController
+Route::post('register', 'Api\UserController@store')->middleware('cors');
+Route::post('login', ['as' => 'login', 'uses' => 'Api\UserController@login'])->middleware('cors');
+
+// Routes with authentication
 Route::group(['middleware' => 'auth:api'], function() {
+    // UserController
+    Route::get('details', 'Api\UserController@index')->middleware('cors');
+    Route::post('details', 'Api\UserController@update')->middleware('cors', 'verified');
+    Route::post('logout', ['as' => 'logout', 'uses' => 'Api\UserController@logout'])->middleware('cors');
+
     // HouseController
     Route::get('house', 'HouseController@index')->middleware('cors');
     Route::get('house/user', 'HouseController@userBelongsTo')->middleware('cors');
