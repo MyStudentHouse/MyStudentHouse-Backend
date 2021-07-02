@@ -16,15 +16,15 @@ use Illuminate\Support\Facades\Route;
 
 // Routes without authentication
 // UserController
-Route::post('register', 'Api\UserController@store')->middleware('cors');
-Route::post('login', ['as' => 'login', 'uses' => 'Api\UserController@login'])->middleware('cors');
+Route::post('register', 'UserController@store')->middleware('cors');
+Route::post('login', ['as' => 'login', 'uses' => 'UserController@login'])->middleware('cors');
 
 // Routes with authentication
 Route::group(['middleware' => 'auth:api'], function() {
     // UserController
-    Route::get('details', 'Api\UserController@index')->middleware('cors');
-    Route::post('details', 'Api\UserController@update')->middleware('cors', 'verified');
-    Route::post('logout', ['as' => 'logout', 'uses' => 'Api\UserController@logout'])->middleware('cors');
+    Route::get('details', 'UserController@index')->middleware('cors');
+    Route::post('details', 'UserController@update')->middleware('cors', 'verified');
+    Route::post('logout', ['as' => 'logout', 'uses' => 'UserController@logout'])->middleware('cors');
 
     // HouseController
     Route::get('house', 'HouseController@index')->middleware('cors');
@@ -35,4 +35,20 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::post('house/assign', 'HouseController@assignUser')->middleware('cors', 'verified');
     Route::post('house/invite', 'HouseController@inviteNonUser')->middleware('cors', 'verified');
     Route::post('house/remove', 'HouseController@removeUser')->middleware('cors', 'verified');
+
+    // TaskController
+    Route::post('task', 'TaskController@storeTask')->middleware('cors', 'verified');
+    Route::post('task/update', 'TaskController@updateTask')->middleware('cors', 'verified');
+    Route::post('task/destroy', 'TaskController@destroyTask')->middleware('cors', 'verified');
+
+    Route::get('task/{task_id}', 'TaskController@indexTask')->middleware('cors', 'verified');
+    Route::get('task/house/{house_id}', 'TaskController@indexHouse')->middleware('cors', 'verified');
+    Route::get('task/user/{user_id}', 'TaskController@indexUser')->middleware('cors', 'verified');
+
+    Route::get('task/{task_id}/{no_weeks}', 'TaskController@indexTaskPerWeek')->middleware('cors', 'verified');
+    Route::get('task/house/{house_id}/{no_weeks}', 'TaskController@indexHousePerWeek')->middleware('cors', 'verified');
+    Route::get('task/user/{user_id}/{no_weeks}', 'TaskController@indexUserPerWeek')->middleware('cors', 'verified');
+    
+    Route::post('task/user/assign', 'TaskController@assignUser')->middleware('cors', 'verified');
+    Route::post('task/user/remove', 'TaskController@removeUser')->middleware('cors', 'verified');
 });
